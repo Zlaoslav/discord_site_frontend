@@ -3,110 +3,105 @@
 <head>
   <meta charset="utf-8">
   <title>Bot Admin Panel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 40px;
-    }
-    button {
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: #5865F2;
-      color: white;
-      font-size: 16px;
-    }
-    button:hover { opacity: 0.9; }
-    .card {
-      background: #1e293b;
-      padding: 20px;
-      border-radius: 12px;
-      display: inline-block;
-      margin-top: 20px;
-      min-width: 300px;
-    }
+    body{font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e6eef8;padding:24px;text-align:center}
+    .card{background:#0f1724;padding:20px;border-radius:10px;display:inline-block;min-width:300px}
+    button{background:#5865F2;border:none;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer}
+    .muted{color:#9aa6bf}
   </style>
 </head>
 <body>
+  <div id="root" class="card"><h2>Загрузка...</h2></div>
 
-  <div id="root">Загрузка...</div>
+<script>
+const API_BASE = "https://pollpi.slavi.workers.dev";
+const TOKEN_KEY = "pollpi_token";
 
-  <script>
-    const API_BASE = "https://pollpi.slavi.workers.dev";
-
-    async function init() {
-      const root = document.getElementById("root");
-
-      try {
-        const res = await fetch(API_BASE + "/me", {
-          credentials: "include"
-        });
-
-        if (!res.ok) {
-          root.innerHTML = "Ошибка соединения с сервером.";
-          return;
-        }
-
-        const j = await res.json();
-
-        if (!j.logged) {
-          root.innerHTML = `
-            <div class="card">
-              <h2>Вход в панель</h2>
-              <a href="${API_BASE}/login">
-                <button>Войти через Discord</button>
-              </a>
-            </div>
-          `;
-          return;
-        }
-
-        const user = j.user;
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Добро пожаловать</h2>
-            <p>${user.username}#${user.discriminator}</p>
-            <button id="logout">Выйти</button>
-            <hr>
-            <button id="doAction">Тест действия (MANAGE_GUILD)</button>
-            <div id="result" style="margin-top:10px;"></div>
-          </div>
-        `;
-
-        document.getElementById("doAction").addEventListener("click", async () => {
-          const resp = await fetch(API_BASE + "/action", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              guildId: "ТВОЙ_GUILD_ID",
-              required: "MANAGE_GUILD"
-            })
-          });
-
-          const text = await resp.text();
-          document.getElementById("result").innerText =
-            "Ответ: " + resp.status + " " + text;
-        });
-
-        document.getElementById("logout").addEventListener("click", async () => {
-          document.cookie = "session=; Max-Age=0; path=/";
-          location.reload();
-        });
-
-      } catch (err) {
-        root.innerHTML = "Ошибка: " + err.message;
+// 1) Extract token from fragment #token=... (if present), store it, and clean the URL
+(function grabTokenFromHash(){
+  try {
+    if (location.hash && location.hash.includes("token=")) {
+      const params = new URLSearchParams(location.hash.slice(1));
+      const token = params.get("token");
+      if (token) {
+        localStorage.setItem(TOKEN_KEY, token);
+        // remove fragment without reloading
+        history.replaceState(null, "", location.pathname + location.search);
       }
     }
+  } catch(e) { console.warn("token grab error", e); }
+})();
 
-    init();
-  </script>
+// helper to get token
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
 
+// helper fetch using Authorization header if token exists
+async function apiFetch(path, opts = {}) {
+  opts.headers = opts.headers || {};
+  const token = getToken();
+  if (token) opts.headers["Authorization"] = "Bearer " + token;
+  // for cross-origin, include credentials only if you rely on cookies (we don't now), but it's OK to include
+  opts.credentials = opts.credentials || "include";
+  const res = await fetch(API_BASE + path, opts);
+  return res;
+}
+
+async function init() {
+  const root = document.getElementById("root");
+  try {
+    const meResp = await apiFetch("/me");
+    if (!meResp.ok) {
+      root.innerHTML = "<h2>Ошибка соединения с сервером.</h2>";
+      return;
+    }
+    const j = await meResp.json();
+    if (!j.logged) {
+      root.innerHTML = `
+        <h2>Войти через Discord</h2>
+        <p class="muted">Нажмите, чтобы авторизоваться и вернуться в панель.</p>
+        <p><a href="${API_BASE}/login"><button>Войти через Discord</button></a></p>
+      `;
+      return;
+    }
+
+    const user = j.user;
+    root.innerHTML = `
+      <h2>Привет, ${user.username}#${user.discriminator}</h2>
+      <p class="muted">ID: ${user.sub}</p>
+      <p>
+        <button id="logout">Выйти</button>
+        <button id="test" style="margin-left:8px">Тест действия (MANAGE_GUILD)</button>
+      </p>
+      <div id="result" style="margin-top:12px;color:#cfe1ff"></div>
+    `;
+
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem(TOKEN_KEY);
+      // optional: call /logout to clear server cookie (if any)
+      location.reload();
+    });
+
+    document.getElementById("test").addEventListener("click", async () => {
+      const guildId = prompt("Введите guildId для проверки (ID сервера)");
+      if (!guildId) return;
+      const resp = await apiFetch("/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guildId, required: "MANAGE_GUILD" })
+      });
+      const text = await resp.text();
+      document.getElementById("result").innerText = "Ответ: " + resp.status + " — " + text;
+    });
+
+  } catch (e) {
+    root.innerHTML = "<h2>Ошибка</h2><pre style='white-space:pre-wrap;color:#ffdede'>" + e.message + "</pre>";
+  }
+}
+
+init();
+</script>
 </body>
 </html>
