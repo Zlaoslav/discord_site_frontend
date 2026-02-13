@@ -9,6 +9,7 @@
     .card{background:#0f1724;padding:20px;border-radius:10px;display:inline-block;min-width:300px}
     button{background:#5865F2;border:none;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer}
     .muted{color:#9aa6bf}
+    pre{white-space:pre-wrap;text-align:left}
   </style>
 </head>
 <body>
@@ -18,7 +19,7 @@
 const API_BASE = "https://pollpi.slavi.workers.dev";
 const TOKEN_KEY = "pollpi_token";
 
-// 1) Extract token from fragment #token=... (if present), store it, and clean the URL
+// get token from fragment #token=... and save to localStorage
 (function grabTokenFromHash(){
   try {
     if (location.hash && location.hash.includes("token=")) {
@@ -26,25 +27,22 @@ const TOKEN_KEY = "pollpi_token";
       const token = params.get("token");
       if (token) {
         localStorage.setItem(TOKEN_KEY, token);
-        // remove fragment without reloading
         history.replaceState(null, "", location.pathname + location.search);
       }
     }
   } catch(e) { console.warn("token grab error", e); }
 })();
 
-// helper to get token
 function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-// helper fetch using Authorization header if token exists
 async function apiFetch(path, opts = {}) {
   opts.headers = opts.headers || {};
   const token = getToken();
   if (token) opts.headers["Authorization"] = "Bearer " + token;
-  // for cross-origin, include credentials only if you rely on cookies (we don't now), but it's OK to include
-  opts.credentials = opts.credentials || "include";
+  // don't rely on cookies for auth now; we send Authorization
+  if (!opts.credentials) opts.credentials = "omit";
   const res = await fetch(API_BASE + path, opts);
   return res;
 }
@@ -78,9 +76,10 @@ async function init() {
       <div id="result" style="margin-top:12px;color:#cfe1ff"></div>
     `;
 
-    document.getElementById("logout").addEventListener("click", () => {
+    document.getElementById("logout").addEventListener("click", async () => {
       localStorage.removeItem(TOKEN_KEY);
-      // optional: call /logout to clear server cookie (if any)
+      // optionally request server /logout to clear server cookie if any
+      try { await fetch(API_BASE + "/logout"); } catch(e) {}
       location.reload();
     });
 
@@ -97,7 +96,7 @@ async function init() {
     });
 
   } catch (e) {
-    root.innerHTML = "<h2>Ошибка</h2><pre style='white-space:pre-wrap;color:#ffdede'>" + e.message + "</pre>";
+    root.innerHTML = "<h2>Ошибка</h2><pre style='color:#ffdede'>" + e.message + "</pre>";
   }
 }
 
