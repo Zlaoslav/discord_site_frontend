@@ -5,22 +5,238 @@
   <title>Bot Admin Panel</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#0b1220;color:#e6eef8;padding:24px;text-align:center}
-    .card{background:#0f1724;padding:20px;border-radius:10px;display:inline-block;min-width:300px}
-    button{background:#5865F2;border:none;color:#fff;padding:10px 14px;border-radius:8px;cursor:pointer}
-    .muted{color:#9aa6bf}
-    pre{white-space:pre-wrap;text-align:left}
+    :root {
+      --bg: #0b1020;
+      --surface: #141b2f;
+      --surface-soft: #1a2440;
+      --text: #eaf0ff;
+      --muted: #9ca9cb;
+      --primary: #6f7bff;
+      --border: #2a355a;
+      --ok: #67d39f;
+      --danger: #ff7b7b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f4f7ff;
+      --surface: #ffffff;
+      --surface-soft: #f2f5ff;
+      --text: #0d1733;
+      --muted: #4f5f86;
+      --primary: #5865f2;
+      --border: #dbe3ff;
+      --ok: #14995e;
+      --danger: #d93636;
+      --shadow: 0 8px 26px rgba(51,78,148,.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1000px 600px at 80% -20%, rgba(88,101,242,.2), transparent), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      backdrop-filter: blur(8px);
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .user-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      object-fit: cover;
+    }
+
+    .user-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+
+    .button {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--surface);
+      transition: .2s;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+    .button-primary {
+      background: var(--primary);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .button-danger {
+      background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+      border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 26px auto;
+      padding: 0 14px 40px;
+    }
+
+    .title { margin: 0 0 6px; }
+    .muted { color: var(--muted); margin: 0; }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .guild-grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .guild-card h3 { margin: 10px 0 6px; }
+    .guild-meta { color: var(--muted); font-size: 14px; }
+
+    .panel-shell {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .tabs { display: flex; flex-direction: column; gap: 8px; }
+    .tab {
+      text-align: left;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active { background: var(--primary); border-color: transparent; color: #fff; }
+
+    .section-title { margin-top: 0; margin-bottom: 12px; }
+
+    .setting {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-soft);
+    }
+
+    label { font-weight: 600; }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    .switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--ok);
+      min-height: 20px;
+    }
+
+    .empty { text-align: center; color: var(--muted); padding: 30px 12px; }
+
+    @media (max-width: 840px) {
+      .panel-shell { grid-template-columns: 1fr; }
+      .topbar { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
-  <div id="root" class="card"><h2>Загрузка...</h2></div>
+  <div id="root"></div>
 
 <script>
 const API_BASE = "https://pollpi.slavi.workers.dev";
 const TOKEN_KEY = "pollpi_token";
+const THEME_KEY = "ui_theme";
 
-// get token from fragment #token=... and save to localStorage
-(function grabTokenFromHash(){
+const SETTINGS_TABS = [
+  {
+    key: "moderation",
+    title: "Модерация",
+    items: [
+      { id: "mod_enabled", label: "Включить модерацию", type: "switch", default: true },
+      { id: "welcome_text", label: "Текст приветствия", type: "text", placeholder: "Добро пожаловать!" },
+      { id: "max_warnings", label: "Лимит предупреждений", type: "number", min: 1, max: 20, default: 3 },
+      { id: "mod_log_channel", label: "Канал логов", type: "channel", options: ["#mod-log", "#admin", "#audit"] },
+      { id: "mod_role", label: "Роль модератора", type: "role", options: ["@Moderator", "@Admin", "@Senior Mod"] },
+      { id: "flood_limit", label: "Лимит флуд-сообщений", type: "range", min: 1, max: 30, default: 8 },
+      { id: "bad_words_action", label: "Действие за мат", type: "select", options: ["Удалить", "Предупредить", "Тайм-аут"] }
+    ]
+  },
+  {
+    key: "fun",
+    title: "Развлечения",
+    items: [
+      { id: "fun_enabled", label: "Включить развлечения", type: "switch", default: true },
+      { id: "music_channel", label: "Музыкальный канал", type: "channel", options: ["#music", "#general", "#party"] },
+      { id: "event_role", label: "Роль для событий", type: "role", options: ["@Events", "@Everyone", "@VIP"] },
+      { id: "daily_reward", label: "Ежедневная награда", type: "number", min: 10, max: 10000, default: 250 },
+      { id: "mini_games", label: "Тип мини-игр", type: "select", options: ["Классика", "Аркада", "Только викторины"] },
+      { id: "annonce", label: "Описание анонсов", type: "textarea", placeholder: "Текст анонса..." }
+    ]
+  }
+];
+
+(function grabTokenFromHash() {
   try {
     if (location.hash && location.hash.includes("token=")) {
       const params = new URLSearchParams(location.hash.slice(1));
@@ -30,77 +246,275 @@ const TOKEN_KEY = "pollpi_token";
         history.replaceState(null, "", location.pathname + location.search);
       }
     }
-  } catch(e) { console.warn("token grab error", e); }
+  } catch (e) {
+    console.warn("token grab error", e);
+  }
 })();
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+function getTheme() {
+  return localStorage.getItem(THEME_KEY) || "dark";
+}
+
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+}
+
 async function apiFetch(path, opts = {}) {
   opts.headers = opts.headers || {};
   const token = getToken();
   if (token) opts.headers["Authorization"] = "Bearer " + token;
-  // don't rely on cookies for auth now; we send Authorization
   if (!opts.credentials) opts.credentials = "omit";
-  const res = await fetch(API_BASE + path, opts);
-  return res;
+  return fetch(API_BASE + path, opts);
 }
 
-async function init() {
-  const root = document.getElementById("root");
-  try {
-    const meResp = await apiFetch("/me");
-    if (!meResp.ok) {
-      root.innerHTML = "<h2>Ошибка соединения с сервером.</h2>";
-      return;
+function parseRoute() {
+  const hash = (location.hash || "#/guilds").replace("#", "");
+  const [_, route, guildId] = hash.split("/");
+  return { route: route || "guilds", guildId };
+}
+
+function escapeHtml(raw) {
+  return String(raw)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function topBar(user) {
+  const avatarUrl = user?.avatar_url || "https://cdn.discordapp.com/embed/avatars/0.png";
+  const name = user ? `${user.username}#${user.discriminator || "0000"}` : "Гость";
+  return `
+    <header class="topbar">
+      <div class="user-block">
+        <button id="logoutBtn" class="button button-danger">Выйти</button>
+        <img class="avatar" src="${avatarUrl}" alt="avatar">
+        <span class="user-name">${escapeHtml(name)}</span>
+      </div>
+      <button id="themeBtn" class="button">Сменить тему</button>
+    </header>
+  `;
+}
+
+function renderControl(item, state) {
+  const value = state[item.id] ?? item.default ?? "";
+  const opts = (item.options || []).map(o => `<option ${o === value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("");
+
+  if (item.type === "switch") {
+    return `<div class="switch"><label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="switch" type="checkbox" ${value ? "checked" : ""}></div>`;
+  }
+  if (item.type === "text") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="text" type="text" value="${escapeHtml(value)}" placeholder="${escapeHtml(item.placeholder || "")}">`;
+  }
+  if (item.type === "textarea") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><textarea id="${item.id}" data-type="textarea" placeholder="${escapeHtml(item.placeholder || "")}">${escapeHtml(value)}</textarea>`;
+  }
+  if (item.type === "number") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="number" type="number" min="${item.min ?? ""}" max="${item.max ?? ""}" value="${value}">`;
+  }
+  if (item.type === "range") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}: <span id="${item.id}_value">${value}</span></label><input id="${item.id}" data-type="range" type="range" min="${item.min ?? 0}" max="${item.max ?? 100}" value="${value}">`;
+  }
+  if (item.type === "channel" || item.type === "role" || item.type === "select") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><select id="${item.id}" data-type="select">${opts}</select>`;
+  }
+  return `<div class="muted">Неизвестный тип поля: ${escapeHtml(item.type)}</div>`;
+}
+
+async function sendSetting(guildId, tabKey, settingId, value) {
+  const token = getToken();
+  const payload = { guildId, tab: tabKey, settingId, value };
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = "Bearer " + token;
+
+  return fetch(API_BASE + "/api/v1/post", {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify(payload)
+  });
+}
+
+async function loadGuilds() {
+  const resp = await apiFetch("/guilds");
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return Array.isArray(data.guilds) ? data.guilds : (Array.isArray(data) ? data : []);
+}
+
+function guildCard(guild) {
+  const icon = guild.icon || "https://cdn.discordapp.com/embed/avatars/1.png";
+  const name = escapeHtml(guild.name || "Без названия");
+  const id = String(guild.id || "");
+  return `
+    <article class="card guild-card">
+      <img class="avatar" src="${icon}" alt="guild icon">
+      <h3>${name}</h3>
+      <p class="guild-meta">ID: ${escapeHtml(id)}</p>
+      <button class="button button-primary" data-open-guild="${escapeHtml(id)}">Открыть панель</button>
+    </article>
+  `;
+}
+
+function renderGuildsPage(user, guilds) {
+  const empty = '<div class="card empty">Список гильдий пуст или недоступен.</div>';
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <h1 class="title">Выбор гильдии</h1>
+      <p class="muted">Выберите сервер для настройки бота.</p>
+      <section class="grid guild-grid">${guilds.length ? guilds.map(guildCard).join("") : empty}</section>
+    </main>
+  `;
+}
+
+function renderGuildPanelPage(user, guildId, selectedTab, state) {
+  const tabs = SETTINGS_TABS.map(t => `<button class="tab ${t.key === selectedTab ? "active" : ""}" data-tab="${t.key}">${escapeHtml(t.title)}</button>`).join("");
+  const current = SETTINGS_TABS.find(t => t.key === selectedTab) || SETTINGS_TABS[0];
+  const controls = current.items.map(item => `<div class="setting" data-setting-id="${item.id}">${renderControl(item, state)}</div>`).join("");
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <h1 class="title">Панель гильдии ${escapeHtml(guildId)}</h1>
+      <p class="muted">Управляйте настройками вкладок и отправляйте изменения на сервер.</p>
+      <div class="panel-shell">
+        <aside class="card tabs">
+          ${tabs}
+          <a href="#/guilds" class="button" style="text-decoration:none;text-align:center">← К списку гильдий</a>
+        </aside>
+        <section class="card">
+          <h2 class="section-title">${escapeHtml(current.title)}</h2>
+          ${controls}
+          <div class="status" id="saveStatus"></div>
+        </section>
+      </div>
+    </main>
+  `;
+}
+
+function attachGlobalEvents(user) {
+  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    localStorage.removeItem(TOKEN_KEY);
+    try { await fetch(API_BASE + "/logout"); } catch (_) {}
+    location.hash = "#/guilds";
+    location.reload();
+  });
+
+  document.getElementById("themeBtn")?.addEventListener("click", () => {
+    const current = getTheme();
+    setTheme(current === "dark" ? "light" : "dark");
+  });
+}
+
+function attachGuildPageEvents() {
+  document.querySelectorAll("[data-open-guild]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.openGuild;
+      location.hash = `#/guild/${id}`;
+    });
+  });
+}
+
+function attachPanelEvents(guildId, selectedTab, state) {
+  document.querySelectorAll("[data-tab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+      sessionStorage.setItem(`tab_${guildId}`, tab.dataset.tab);
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll("[data-setting-id]").forEach(container => {
+    const control = container.querySelector("input,select,textarea");
+    if (!control) return;
+
+    const save = async () => {
+      const settingId = container.dataset.settingId;
+      let value;
+      if (control.dataset.type === "switch") value = control.checked;
+      else if (control.dataset.type === "number" || control.dataset.type === "range") value = Number(control.value);
+      else value = control.value;
+
+      state[settingId] = value;
+      sessionStorage.setItem(`state_${guildId}`, JSON.stringify(state));
+      const status = document.getElementById("saveStatus");
+      status.textContent = "Сохранение...";
+
+      if (control.dataset.type === "range") {
+        const label = document.getElementById(settingId + "_value");
+        if (label) label.textContent = String(value);
+      }
+
+      try {
+        const resp = await sendSetting(guildId, selectedTab, settingId, value);
+        if (resp.ok) status.textContent = "Изменение отправлено на сервер.";
+        else status.textContent = "Ошибка отправки: " + resp.status;
+      } catch (e) {
+        status.textContent = "Ошибка сети: " + e.message;
+      }
+    };
+
+    control.addEventListener(control.dataset.type === "range" ? "input" : "change", save);
+    if (control.dataset.type === "text" || control.dataset.type === "textarea" || control.dataset.type === "number") {
+      control.addEventListener("blur", save);
     }
-    const j = await meResp.json();
-    if (!j.logged) {
+  });
+}
+
+async function initAuth() {
+  const meResp = await apiFetch("/me");
+  if (!meResp.ok) return { logged: false };
+  const me = await meResp.json();
+  return me;
+}
+
+async function renderApp() {
+  setTheme(getTheme());
+  const root = document.getElementById("root");
+
+  try {
+    const auth = await initAuth();
+    if (!auth.logged) {
       root.innerHTML = `
-        <h2>Войти через Discord</h2>
-        <p class="muted">Нажмите, чтобы авторизоваться и вернуться в панель.</p>
-        <p><a href="${API_BASE}/login"><button>Войти через Discord</button></a></p>
+        <main class="layout">
+          <section class="card" style="max-width:520px;margin:60px auto;text-align:center">
+            <h1>Войти через Discord</h1>
+            <p class="muted">Нажмите, чтобы авторизоваться и управлять гильдиями.</p>
+            <a href="${API_BASE}/login"><button class="button button-primary">Войти через Discord</button></a>
+          </section>
+        </main>
       `;
       return;
     }
 
-    const user = j.user;
-    root.innerHTML = `
-      <h2>Привет, ${user.username}#${user.discriminator}</h2>
-      <p class="muted">ID: ${user.sub}</p>
-      <p>
-        <button id="logout">Выйти</button>
-        <button id="test" style="margin-left:8px">Тест действия (MANAGE_GUILD)</button>
-      </p>
-      <div id="result" style="margin-top:12px;color:#cfe1ff"></div>
-    `;
+    const { route, guildId } = parseRoute();
+    if (route === "guild" && guildId) {
+      const selectedTab = sessionStorage.getItem(`tab_${guildId}`) || SETTINGS_TABS[0].key;
+      const state = JSON.parse(sessionStorage.getItem(`state_${guildId}`) || "{}");
+      root.innerHTML = renderGuildPanelPage(auth.user, guildId, selectedTab, state);
+      attachGlobalEvents(auth.user);
+      attachPanelEvents(guildId, selectedTab, state);
+      sessionStorage.setItem(`state_${guildId}`, JSON.stringify(state));
+      return;
+    }
 
-    document.getElementById("logout").addEventListener("click", async () => {
-      localStorage.removeItem(TOKEN_KEY);
-      // optionally request server /logout to clear server cookie if any
-      try { await fetch(API_BASE + "/logout"); } catch(e) {}
-      location.reload();
-    });
-
-    document.getElementById("test").addEventListener("click", async () => {
-      const guildId = prompt("Введите guildId для проверки (ID сервера)");
-      if (!guildId) return;
-      const resp = await apiFetch("/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guildId, required: "MANAGE_GUILD" })
-      });
-      const text = await resp.text();
-      document.getElementById("result").innerText = "Ответ: " + resp.status + " — " + text;
-    });
-
+    const guilds = await loadGuilds();
+    root.innerHTML = renderGuildsPage(auth.user, guilds);
+    attachGlobalEvents(auth.user);
+    attachGuildPageEvents();
   } catch (e) {
-    root.innerHTML = "<h2>Ошибка</h2><pre style='color:#ffdede'>" + e.message + "</pre>";
+    root.innerHTML = `<main class="layout"><section class="card"><h2>Ошибка</h2><pre>${escapeHtml(e.message)}</pre></section></main>`;
   }
 }
 
-init();
+window.addEventListener("hashchange", renderApp);
+window.addEventListener("storage", () => setTheme(getTheme()));
+renderApp();
 </script>
 </body>
 </html>
