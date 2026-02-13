@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Admin Panel</title></head>
+<body>
+  <div id="root">Loading...</div>
+  <script>
+    async function init() {
+      const res = await fetch('/me', {credentials:'include'});
+      const j = await res.json();
+      const root = document.getElementById('root');
+      if (!j.logged) {
+        root.innerHTML = '<a href="/login">Войти через Discord</a>';
+        return;
+      }
+      const user = j.user;
+      root.innerHTML = `<h2>Привет, ${user.username}#${user.discriminator}</h2>
+        <div id="panels"></div>`;
+      // Запросить сервер о правах в конкретной гильдии (если нужно)
+      // пример вызова защищённого действия:
+      document.getElementById('panels').innerHTML = `
+        <button id="doAction">Выполнить защищённое действие</button>
+        <div id="result"></div>
+      `;
+      document.getElementById('doAction').addEventListener('click', async ()=>{
+        const resp = await fetch('/action', {
+          method:'POST',
+          credentials:'include',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ guildId: 'ТВОЙ_GUILD_ID', required: 'MANAGE_GUILD' })
+        });
+        const r = await resp.text();
+        document.getElementById('result').innerText = `Ответ: ${resp.status} ${r}`;
+      });
+    }
+    init();
+  </script>
+</body>
+</html>
