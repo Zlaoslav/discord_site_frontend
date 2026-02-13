@@ -1,38 +1,112 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Admin Panel</title></head>
-<body>
-  <div id="root">Loading...</div>
-  <script>
-    async function init() {
-      const res = await fetch('/me', {credentials:'include'});
-      const j = await res.json();
-      const root = document.getElementById('root');
-      if (!j.logged) {
-        root.innerHTML = '<a href="/login">Войти через Discord</a>';
-        return;
-      }
-      const user = j.user;
-      root.innerHTML = `<h2>Привет, ${user.username}#${user.discriminator}</h2>
-        <div id="panels"></div>`;
-      // Запросить сервер о правах в конкретной гильдии (если нужно)
-      // пример вызова защищённого действия:
-      document.getElementById('panels').innerHTML = `
-        <button id="doAction">Выполнить защищённое действие</button>
-        <div id="result"></div>
-      `;
-      document.getElementById('doAction').addEventListener('click', async ()=>{
-        const resp = await fetch('/action', {
-          method:'POST',
-          credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ guildId: 'ТВОЙ_GUILD_ID', required: 'MANAGE_GUILD' })
-        });
-        const r = await resp.text();
-        document.getElementById('result').innerText = `Ответ: ${resp.status} ${r}`;
-      });
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Bot Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      text-align: center;
+      padding: 40px;
     }
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #5865F2;
+      color: white;
+      font-size: 16px;
+    }
+    button:hover { opacity: 0.9; }
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 20px;
+      min-width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root">Загрузка...</div>
+
+  <script>
+    const API_BASE = "https://pollpi.slavi.workers.dev";
+
+    async function init() {
+      const root = document.getElementById("root");
+
+      try {
+        const res = await fetch(API_BASE + "/me", {
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          root.innerHTML = "Ошибка соединения с сервером.";
+          return;
+        }
+
+        const j = await res.json();
+
+        if (!j.logged) {
+          root.innerHTML = `
+            <div class="card">
+              <h2>Вход в панель</h2>
+              <a href="${API_BASE}/login">
+                <button>Войти через Discord</button>
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        const user = j.user;
+
+        root.innerHTML = `
+          <div class="card">
+            <h2>Добро пожаловать</h2>
+            <p>${user.username}#${user.discriminator}</p>
+            <button id="logout">Выйти</button>
+            <hr>
+            <button id="doAction">Тест действия (MANAGE_GUILD)</button>
+            <div id="result" style="margin-top:10px;"></div>
+          </div>
+        `;
+
+        document.getElementById("doAction").addEventListener("click", async () => {
+          const resp = await fetch(API_BASE + "/action", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              guildId: "ТВОЙ_GUILD_ID",
+              required: "MANAGE_GUILD"
+            })
+          });
+
+          const text = await resp.text();
+          document.getElementById("result").innerText =
+            "Ответ: " + resp.status + " " + text;
+        });
+
+        document.getElementById("logout").addEventListener("click", async () => {
+          document.cookie = "session=; Max-Age=0; path=/";
+          location.reload();
+        });
+
+      } catch (err) {
+        root.innerHTML = "Ошибка: " + err.message;
+      }
+    }
+
     init();
   </script>
+
 </body>
 </html>
