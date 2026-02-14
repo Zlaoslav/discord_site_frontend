@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Bot Admin Panel</title>
+  <title>[dev] PollPi Dashboard</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     :root {
@@ -204,9 +204,41 @@
   <div id="root"></div>
 
 <script>
+/* ========== CONFIG ========== */
 const API_BASE = "https://pollpi.slavi.workers.dev";
 const TOKEN_KEY = "pollpi_token";
 const THEME_KEY = "ui_theme";
+
+/* ========== SETTINGS (unchanged) ========== */
+const SETTINGS_TABS = [
+  {
+    key: "moderation",
+    title: "Модерация",
+    items: [
+      { id: "mod_enabled", label: "Включить модерацию", type: "switch", default: true },
+      { id: "welcome_text", label: "Текст приветствия", type: "text", placeholder: "Добро пожаловать!" },
+      { id: "max_warnings", label: "Лимит предупреждений", type: "number", min: 1, max: 20, default: 3 },
+      { id: "mod_log_channel", label: "Канал логов", type: "channel", options: ["#mod-log", "#admin", "#audit"] },
+      { id: "mod_role", label: "Роль модератора", type: "role", options: ["@Moderator", "@Admin", "@Senior Mod"] },
+      { id: "flood_limit", label: "Лимит флуд-сообщений", type: "range", min: 1, max: 30, default: 8 },
+      { id: "bad_words_action", label: "Действие за мат", type: "select", options: ["Удалить", "Предупредить", "Тайм-аут"] }
+    ]
+  },
+  {
+    key: "fun",
+    title: "Развлечения",
+    items: [
+      { id: "fun_enabled", label: "Включить развлечения", type: "switch", default: true },
+      { id: "music_channel", label: "Музыкальный канал", type: "channel", options: ["#music", "#general", "#party"] },
+      { id: "event_role", label: "Роль для событий", type: "role", options: ["@Events", "@Everyone", "@VIP"] },
+      { id: "daily_reward", label: "Ежедневная награда", type: "number", min: 10, max: 10000, default: 250 },
+      { id: "mini_games", label: "Тип мини-игр", type: "select", options: ["Классика", "Аркада", "Только викторины"] },
+      { id: "annonce", label: "Описание анонсов", type: "textarea", placeholder: "Текст анонса..." }
+    ]
+  }
+];
+
+/* ========== HELPERS ========== */
 
 (function grabTokenFromHash() {
   try {
@@ -236,44 +268,248 @@ function setTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
-/* ---------- ВАЖНО: ИСПРАВЛЕННЫЙ apiFetch ---------- */
+function escapeHtml(raw) {
+  return String(raw || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/* build avatar url from jwt payload fields (sub, avatar, discriminator) */
+function buildAvatarUrl(user) {
+  if (!user) return "https://cdn.discordapp.com/embed/avatars/0.png";
+  // user.sub = id
+  if (user.avatar) {
+    return `https://cdn.discordapp.com/avatars/${user.sub}/${user.avatar}.png`;
+  }
+  // fallback based on discriminator (if present)
+  let idx = 0;
+  try { idx = (parseInt(user.discriminator || "0", 10) || 0) % 5; } catch(e) { idx = 0; }
+  return `https://cdn.discordapp.com/embed/avatars/${idx}.png`;
+}
+
+/* ========== API LAYER ========== */
+
+/* Global fetch: sends credentials so browser will attach HttpOnly cookie set by worker */
 async function apiFetch(path, opts = {}) {
   opts = opts || {};
   opts.headers = opts.headers || {};
 
   const token = getToken();
-  if (token) {
-    opts.headers["Authorization"] = "Bearer " + token;
-  }
+  if (token) opts.headers["Authorization"] = "Bearer " + token;
 
-  // обязательно для cookie-аутентификации
+  // crucial: include credentials so cookie is sent cross-site
   opts.credentials = "include";
 
-  const url = path.startsWith("/")
-    ? API_BASE + path
-    : API_BASE + "/" + path;
-
+  const url = path.startsWith("/") ? (API_BASE + path) : (API_BASE + "/" + path);
   return fetch(url, opts);
 }
-/* ---------------------------------------------------- */
 
-function parseRoute() {
-  const hash = (location.hash || "#/guilds").replace("#", "");
-  const [_, route, guildId] = hash.split("/");
-  return { route: route || "guilds", guildId };
-}
-
-/* ---------- ИСПРАВЛЕННЫЙ sendSetting ---------- */
+/* Use /action for settings */
 async function sendSetting(guildId, tabKey, settingId, value) {
   const payload = { guildId, tab: tabKey, settingId, value };
-
   return apiFetch("/action", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 }
-/* ------------------------------------------------ */
+
+/* ========== RENDER (restored + improved) ========== */
+
+function topBar(user) {
+  const avatarUrl = buildAvatarUrl(user);
+  const name = user ? `${escapeHtml(user.username)}#${escapeHtml(user.discriminator || "0000")}` : "Гость";
+  return `
+    <header class="topbar">
+      <div class="user-block">
+        <button id="logoutBtn" class="button button-danger">Выйти</button>
+        <img class="avatar" src="${avatarUrl}" alt="avatar">
+        <span class="user-name">${name}</span>
+      </div>
+      <div>
+        <button id="themeBtn" class="button">Сменить тему</button>
+      </div>
+    </header>
+  `;
+}
+
+function renderControl(item, state) {
+  const value = state[item.id] ?? item.default ?? "";
+  const opts = (item.options || []).map(o => `<option ${o === value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("");
+
+  if (item.type === "switch") {
+    return `<div class="switch"><label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="switch" type="checkbox" ${value ? "checked" : ""}></div>`;
+  }
+  if (item.type === "text") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="text" type="text" value="${escapeHtml(value)}" placeholder="${escapeHtml(item.placeholder || "")}">`;
+  }
+  if (item.type === "textarea") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><textarea id="${item.id}" data-type="textarea" placeholder="${escapeHtml(item.placeholder || "")}">${escapeHtml(value)}</textarea>`;
+  }
+  if (item.type === "number") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><input id="${item.id}" data-type="number" type="number" min="${item.min ?? ""}" max="${item.max ?? ""}" value="${value}">`;
+  }
+  if (item.type === "range") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}: <span id="${item.id}_value">${value}</span></label><input id="${item.id}" data-type="range" type="range" min="${item.min ?? 0}" max="${item.max ?? 100}" value="${value}">`;
+  }
+  if (item.type === "channel" || item.type === "role" || item.type === "select") {
+    return `<label for="${item.id}">${escapeHtml(item.label)}</label><select id="${item.id}" data-type="select">${opts}</select>`;
+  }
+  return `<div class="muted">Неизвестный тип поля: ${escapeHtml(item.type)}</div>`;
+}
+
+function guildCard(guild) {
+  // guild may contain icon, name, id, isAdmin, botPresent
+  const icon = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : "https://cdn.discordapp.com/embed/avatars/1.png";
+  const name = escapeHtml(guild.name || "Без названия");
+  const id = String(guild.id || "");
+  const extras = [];
+  if (guild.isAdmin) extras.push("Вы — админ");
+  if (guild.botPresent) extras.push("Бот в сервере");
+  const meta = extras.length ? extras.join(" • ") : `ID: ${escapeHtml(id)}`;
+
+  return `
+    <article class="card guild-card">
+      <img class="avatar" src="${icon}" alt="guild icon">
+      <h3>${name}</h3>
+      <p class="guild-meta">${meta}</p>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="button button-primary" data-open-guild="${escapeHtml(id)}">Открыть панель</button>
+        <button class="button" data-copy-id="${escapeHtml(id)}">Копировать ID</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderGuildsPage(user, guilds) {
+  const empty = '<div class="card empty">Список гильдий пуст или недоступен.</div>';
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <h1 class="title">Выбор гильдии</h1>
+      <p class="muted">Выберите сервер для настройки бота.</p>
+      <section class="grid guild-grid">${guilds.length ? guilds.map(guildCard).join("") : empty}</section>
+    </main>
+  `;
+}
+
+function renderGuildPanelPage(user, guildId, selectedTab, state) {
+  const tabs = SETTINGS_TABS.map(t => `<button class="tab ${t.key === selectedTab ? "active" : ""}" data-tab="${t.key}">${escapeHtml(t.title)}</button>`).join("");
+  const current = SETTINGS_TABS.find(t => t.key === selectedTab) || SETTINGS_TABS[0];
+  const controls = current.items.map(item => `<div class="setting" data-setting-id="${item.id}">${renderControl(item, state)}</div>`).join("");
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <h1 class="title">Панель гильдии ${escapeHtml(guildId)}</h1>
+      <p class="muted">Управляйте настройками вкладок и отправляйте изменения на сервер.</p>
+      <div class="panel-shell">
+        <aside class="card tabs">
+          ${tabs}
+          <a href="#/guilds" class="button" style="text-decoration:none;text-align:center;margin-top:8px;display:block">← К списку гильдий</a>
+        </aside>
+        <section class="card">
+          <h2 class="section-title">${escapeHtml(current.title)}</h2>
+          ${controls}
+          <div class="status" id="saveStatus"></div>
+        </section>
+      </div>
+    </main>
+  `;
+}
+
+/* ========== EVENTS & BINDINGS ========== */
+
+function attachGlobalEvents(user) {
+  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    localStorage.removeItem(TOKEN_KEY);
+    try { await fetch(API_BASE + "/logout", { credentials: "include" }); } catch (_) {}
+    location.hash = "#/guilds";
+    location.reload();
+  });
+
+  document.getElementById("themeBtn")?.addEventListener("click", () => {
+    const current = getTheme();
+    setTheme(current === "dark" ? "light" : "dark");
+    // re-apply
+    document.documentElement.dataset.theme = getTheme();
+  });
+}
+
+function attachGuildPageEvents() {
+  document.querySelectorAll("[data-open-guild]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.openGuild;
+      location.hash = `#/guild/${id}`;
+    });
+  });
+
+  document.querySelectorAll("[data-copy-id]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.copyId;
+      try {
+        await navigator.clipboard.writeText(id);
+        const prev = btn.textContent;
+        btn.textContent = "Скопировано";
+        setTimeout(() => btn.textContent = prev, 1200);
+      } catch (e) {
+        console.warn("Clipboard failed", e);
+      }
+    });
+  });
+}
+
+function attachPanelEvents(guildId, selectedTab, state) {
+  document.querySelectorAll("[data-tab]").forEach(tab => {
+    tab.addEventListener("click", () => {
+      sessionStorage.setItem(`tab_${guildId}`, tab.dataset.tab);
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll("[data-setting-id]").forEach(container => {
+    const control = container.querySelector("input,select,textarea");
+    if (!control) return;
+
+    const save = async () => {
+      const settingId = container.dataset.settingId;
+      let value;
+      if (control.dataset.type === "switch") value = control.checked;
+      else if (control.dataset.type === "number" || control.dataset.type === "range") value = Number(control.value);
+      else value = control.value;
+
+      state[settingId] = value;
+      sessionStorage.setItem(`state_${guildId}`, JSON.stringify(state));
+      const status = document.getElementById("saveStatus");
+      status.textContent = "Сохранение...";
+
+      if (control.dataset.type === "range") {
+        const label = document.getElementById(settingId + "_value");
+        if (label) label.textContent = String(value);
+      }
+
+      try {
+        const resp = await sendSetting(guildId, selectedTab, settingId, value);
+        if (resp.ok) status.textContent = "Изменение отправлено на сервер.";
+        else {
+          const t = await resp.text().catch(()=>"");
+          status.textContent = "Ошибка отправки: " + resp.status + " " + t;
+        }
+      } catch (e) {
+        status.textContent = "Ошибка сети: " + e.message;
+      }
+    };
+
+    control.addEventListener(control.dataset.type === "range" ? "input" : "change", save);
+    if (control.dataset.type === "text" || control.dataset.type === "textarea" || control.dataset.type === "number") {
+      control.addEventListener("blur", save);
+    }
+  });
+}
+
+/* ========== BOOTSTRAP / DATA LOAD ========== */
 
 async function initAuth() {
   const resp = await apiFetch("/me");
@@ -281,22 +517,14 @@ async function initAuth() {
   return resp.json();
 }
 
-function attachGlobalEvents() {
-  document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-    localStorage.removeItem(TOKEN_KEY);
-    try {
-      await fetch(API_BASE + "/logout", { credentials: "include" });
-    } catch (_) {}
-    location.reload();
-  });
-
-  document.getElementById("themeBtn")?.addEventListener("click", () => {
-    const current = getTheme();
-    setTheme(current === "dark" ? "light" : "dark");
-  });
+async function loadGuilds() {
+  const resp = await apiFetch("/guilds");
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return Array.isArray(data.guilds) ? data.guilds : (Array.isArray(data) ? data : []);
 }
 
-/* остальной твой код рендера оставляй без изменений */
+/* ========== MAIN RENDER ========== */
 
 async function renderApp() {
   setTheme(getTheme());
@@ -304,38 +532,50 @@ async function renderApp() {
 
   try {
     const auth = await initAuth();
-
     if (!auth.logged) {
       root.innerHTML = `
         <main class="layout">
           <section class="card" style="max-width:520px;margin:60px auto;text-align:center">
             <h1>Войти через Discord</h1>
-            <p class="muted">Нажмите, чтобы авторизоваться.</p>
-            <a href="${API_BASE}/login">
-              <button class="button button-primary">Войти через Discord</button>
-            </a>
+            <p class="muted">Нажмите, чтобы авторизоваться и управлять гильдиями.</p>
+            <a href="${API_BASE}/login"><button class="button button-primary">Войти через Discord</button></a>
           </section>
         </main>
       `;
       return;
     }
 
-    root.innerHTML = `
-      <main class="layout">
-        <h1>Вы вошли как ${auth.user.username}</h1>
-        <button id="logoutBtn">Выйти</button>
-      </main>
-    `;
+    const { route, guildId } = (function parseRoute() {
+      const hash = (location.hash || "#/guilds").replace("#", "");
+      const [_, route, guildId] = hash.split("/");
+      return { route: route || "guilds", guildId };
+    })();
 
-    attachGlobalEvents();
+    if (route === "guild" && guildId) {
+      const selectedTab = sessionStorage.getItem(`tab_${guildId}`) || SETTINGS_TABS[0].key;
+      const state = JSON.parse(sessionStorage.getItem(`state_${guildId}`) || "{}");
+      root.innerHTML = renderGuildPanelPage(auth.user, guildId, selectedTab, state);
+      attachGlobalEvents(auth.user);
+      attachPanelEvents(guildId, selectedTab, state);
+      sessionStorage.setItem(`state_${guildId}`, JSON.stringify(state));
+      return;
+    }
+
+    const guilds = await loadGuilds();
+    root.innerHTML = renderGuildsPage(auth.user, guilds);
+    attachGlobalEvents(auth.user);
+    attachGuildPageEvents();
 
   } catch (e) {
-    root.innerHTML = `<pre>${e.message}</pre>`;
+    root.innerHTML = `<main class="layout"><section class="card"><h2>Ошибка</h2><pre>${escapeHtml(e && e.message ? e.message : String(e))}</pre></section></main>`;
   }
 }
 
+/* ========== INIT ========== */
+window.addEventListener("hashchange", renderApp);
+window.addEventListener("storage", () => setTheme(getTheme()));
 renderApp();
-</script>
 
+</script>
 </body>
 </html>
