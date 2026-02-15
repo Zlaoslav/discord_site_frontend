@@ -135,20 +135,35 @@ async function initAuth(){ const resp = await apiFetch('/me'); if(!resp.ok) retu
 async function sendSetting(guildId, tabKey, settingId, value){ const payload = { guildId, tab: tabKey, settingId, value }; try{ const r = await apiFetch('/action',{ method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return r; }catch(e){ throw e; } }
 
 /* RENDER: topbar */
-function topBar(user){ const avatarUrl = buildAvatarUrl(user); const username = user ? escapeHtml(user.username||user.name||'User') : 'Гость'; return `
+function topBar(user){
+  const loggedIn = !!user;
+  const avatarUrl = loggedIn ? buildAvatarUrl(user) : '';
+  const username = loggedIn ? escapeHtml(user.username||user.name||'User') : '';
+  const themeIcon = getTheme()==='dark' ? '🌙' : '☀️';
+
+  return `
   <header class="topbar">
     <div class="brand">
-      <img src="/favicon.png" alt="icon">
+      <img src="favicon.png" alt="icon">
       <div class="title">PollPi</div>
+      <span style="background:#5865f2;color:white;padding:2px 6px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;">БОТ</span>
+      <small class="muted" style="margin-left:6px;">Dashboard</small>
     </div>
-    <div class="nav-center" aria-hidden="true"><small class="muted">Dashboard</small></div>
+
+    <div class="nav-center" aria-hidden="true"></div>
+
     <div class="user-area">
-      <img class="avatar" src="${avatarUrl}" alt="avatar">
-      <div class="user-name">${username}</div>
-      <button id="logoutBtn" class="button button-danger">Выйти</button>
-      <button id="themeBtn" class="button">Тема</button>
+      ${loggedIn ? `
+        <img class="avatar" src="${avatarUrl}" alt="avatar">
+        <div class="user-name">${username}</div>
+        <button id="logoutBtn" class="button button-danger">Выйти</button>
+      ` : `
+        <button id="loginBtn" class="button" style="border:1px solid var(--primary);background:transparent;color:var(--primary);">Войти</button>
+      `}
+      <button id="themeBtn" class="button">${themeIcon}</button>
     </div>
-  </header>`; }
+  </header>`;
+}
 
 /* GUILD CARD */
 function guildCard(guild){
@@ -158,8 +173,6 @@ function guildCard(guild){
   const isAdmin = !!guild.isAdmin;
   const botPresent = !!guild.botPresent;
   const badges = [];
-  if(isAdmin) badges.push('<span class="badge">Вы — админ</span>');
-  if(botPresent) badges.push('<span class="badge">Бот установлен</span>');
   // Invite link
   const inviteLink = `${DISCORD_INVITE_BASE}&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`;
 
@@ -325,6 +338,11 @@ async function renderApp(forceReload = false){ setTheme(getTheme()); const root 
 }
 
 window.addEventListener('hashchange', ()=>renderApp()); window.addEventListener('storage', ()=> setTheme(getTheme())); renderApp();
+document.addEventListener('click', e=>{
+  if(e.target?.id==='loginBtn'){
+    window.location.href = API_BASE + '/login';
+  }
+});
 
 </script>
 </body>
