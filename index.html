@@ -70,6 +70,9 @@
       margin-top:10px;
       font-size:14px;
       font-weight:500;
+    }
+    /* Онлайн (бот установлен) */
+    .member-info.online{
       color:#d1f7e3;
     }
 
@@ -98,6 +101,18 @@
       100%{ opacity:0; }
     }
 
+/* Оффлайн (бота нет) */
+    .member-info.offline{
+      color:#9ca3af;
+    }
+
+    .offline-dot{
+      background:#6b7280;
+    }
+
+    .offline-dot::after{
+      display:none;
+    }
     /* Кнопки одинакового размера */
     .action-btn{
       font-size:14px;
@@ -128,7 +143,7 @@
       display:flex;
       gap:10px;
     }
-      
+
 
     /* Panel */
     .panel{ display:grid; grid-template-columns:280px 1fr; gap:14px; margin-top:18px }
@@ -256,32 +271,49 @@ function topBar(user){
 /* Guild card */
 function guildCard(g){
   const icon = g.icon 
-    ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` 
+    ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`
     : "https://cdn.discordapp.com/embed/avatars/1.png";
 
   const id = String(g.id || "");
   const name = escapeHtml(g.name || id);
+  const hasBot = g.botPresent;
   const memberCount = g.memberCount ?? 0;
 
+  // Блок участников
+  const memberInfo = hasBot
+    ? `
+      <div class="member-info online">
+        <span class="status-dot"></span>
+        <span class="member-count">${memberCount} участников</span>
+      </div>
+    `
+    : `
+      <div class="member-info offline">
+        <span class="status-dot offline-dot"></span>
+        <span class="member-count">Нет информации</span>
+      </div>
+    `;
+
+  // Основная кнопка
   let primaryAction = '';
 
-  if(g.isAdmin && g.botPresent){
+  if(g.isAdmin && hasBot){
     primaryAction = `
       <button class="button button-primary action-btn" data-open-guild="${escapeHtml(id)}">
         Открыть панель
       </button>`;
   } 
-  else if(g.isAdmin && !g.botPresent){
+  else if(g.isAdmin && !hasBot){
     const invite = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&scope=bot%20applications.commands&permissions=8&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`;
     primaryAction = `
-      <a class="button button-success action-btn" 
-         href="${invite}" 
-         target="_blank" 
+      <a class="button button-success action-btn"
+         href="${invite}"
+         target="_blank"
          rel="noopener noreferrer">
         Пригласить бота
       </a>`;
   } 
-  else if(g.botPresent){
+  else if(hasBot){
     primaryAction = `
       <button class="button action-btn" data-open-guild="${escapeHtml(id)}">
         Открыть (просмотр)
@@ -301,12 +333,7 @@ function guildCard(g){
         <div style="flex:1">
           <h3 class="guild-title">${name}</h3>
           <p class="guild-meta">ID: ${escapeHtml(id)}</p>
-
-          <div class="member-info">
-            <span class="status-dot"></span>
-            <span class="member-count">${memberCount} участников</span>
-          </div>
-
+          ${memberInfo}
         </div>
       </div>
 
