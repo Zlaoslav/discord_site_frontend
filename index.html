@@ -54,7 +54,81 @@
     .g-head{ display:flex; gap:12px; align-items:center }
     .g-avatar{ width:56px; height:56px; border-radius:12px; object-fit:cover; border:1px solid var(--border) }
     .guild-meta{ color:var(--muted); font-size:13px; margin:0 }
-    .tags{ display:flex; gap:8px; flex-wrap:wrap }
+    
+
+    /* Заголовок */
+    .guild-title{
+      margin:0;
+      font-weight:600;
+    }
+
+    /* Блок участников */
+    .member-info{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      font-size:14px;
+      font-weight:500;
+      color:#d1f7e3;
+    }
+
+    /* Анимированная зелёная точка */
+    .status-dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#22c55e;
+      position:relative;
+    }
+
+    .status-dot::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      background:#22c55e;
+      animation:pulse 1.8s infinite;
+      opacity:0.6;
+    }
+
+    @keyframes pulse{
+      0%{ transform:scale(1); opacity:0.6; }
+      70%{ transform:scale(2.5); opacity:0; }
+      100%{ opacity:0; }
+    }
+
+    /* Кнопки одинакового размера */
+    .action-btn{
+      font-size:14px;
+      padding:8px 14px;
+      font-weight:500;
+    }
+
+    /* Зелёная кнопка пригласить */
+    .button-success{
+      background:#22c55e;
+      border:1px solid #16a34a;
+      color:white;
+    }
+
+    .button-success:hover{
+      background:#16a34a;
+    }
+
+    /* Лейаут действий */
+    .card-actions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:14px;
+    }
+
+    .left-actions{
+      display:flex;
+      gap:10px;
+    }
+      
 
     /* Panel */
     .panel{ display:grid; grid-template-columns:280px 1fr; gap:14px; margin-top:18px }
@@ -181,22 +255,43 @@ function topBar(user){
 
 /* Guild card */
 function guildCard(g){
-  const icon = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : "https://cdn.discordapp.com/embed/avatars/1.png";
+  const icon = g.icon 
+    ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` 
+    : "https://cdn.discordapp.com/embed/avatars/1.png";
+
   const id = String(g.id || "");
   const name = escapeHtml(g.name || id);
-  const badges = [];
-  if(g.isAdmin) badges.push('<span class="badge">Вы — админ</span>');
-  if(g.botPresent) badges.push('<span class="badge">Бот установлен</span>');
+  const memberCount = g.memberCount ?? 0;
+
   let primaryAction = '';
+
   if(g.isAdmin && g.botPresent){
-    primaryAction = `<button class="button button-primary" data-open-guild="${escapeHtml(id)}">Открыть панель</button>`;
-  } else if(g.isAdmin && !g.botPresent){
+    primaryAction = `
+      <button class="button button-primary action-btn" data-open-guild="${escapeHtml(id)}">
+        Открыть панель
+      </button>`;
+  } 
+  else if(g.isAdmin && !g.botPresent){
     const invite = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&scope=bot%20applications.commands&permissions=8&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`;
-    primaryAction = `<a class="button button-invite" href="${invite}" target="_blank" rel="noopener noreferrer">Пригласить бота</a>`;
-  } else if(g.botPresent){
-    primaryAction = `<button class="button" data-open-guild="${escapeHtml(id)}">Открыть (только просмотр)</button>`;
-  } else {
-    primaryAction = `<button class="button button-ghost button-disabled">Недоступно</button>`;
+    primaryAction = `
+      <a class="button button-success action-btn" 
+         href="${invite}" 
+         target="_blank" 
+         rel="noopener noreferrer">
+        Пригласить бота
+      </a>`;
+  } 
+  else if(g.botPresent){
+    primaryAction = `
+      <button class="button action-btn" data-open-guild="${escapeHtml(id)}">
+        Открыть (просмотр)
+      </button>`;
+  } 
+  else {
+    primaryAction = `
+      <button class="button button-ghost button-disabled action-btn">
+        Недоступно
+      </button>`;
   }
 
   return `
@@ -204,13 +299,24 @@ function guildCard(g){
       <div class="g-head">
         <img class="g-avatar" src="${icon}" alt="icon">
         <div style="flex:1">
-          <h3 style="margin:0">${name}</h3>
+          <h3 class="guild-title">${name}</h3>
           <p class="guild-meta">ID: ${escapeHtml(id)}</p>
-          <div class="tags" style="margin-top:8px">${badges.join("")}</div>
+
+          <div class="member-info">
+            <span class="status-dot"></span>
+            <span class="member-count">${memberCount} участников</span>
+          </div>
+
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;align-items:center">
-        <div style="display:flex;gap:8px">${primaryAction}<button class="button" data-copy-id="${escapeHtml(id)}">Копировать ID</button></div>
+
+      <div class="card-actions">
+        <div class="left-actions">
+          ${primaryAction}
+          <button class="button action-btn" data-copy-id="${escapeHtml(id)}">
+            Копировать ID
+          </button>
+        </div>
         <div class="small-muted">${g.permissions ?? ""}</div>
       </div>
     </article>
