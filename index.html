@@ -1,272 +1,232 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
 <title>PollPi Dashboard</title>
-
-<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" href="favicon.png" type="image/png">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <style>
 :root {
-  --bg:#0f1115;
-  --card:#1a1d24;
-  --text:#ffffff;
-  --muted:#9aa0a6;
+  --bg:#0b1020;
+  --surface:#141b2f;
+  --surface-soft:#1a2440;
+  --text:#eaf0ff;
+  --muted:#9ca9cb;
+  --primary:#6f7bff;
+  --border:#2a355a;
+  --ok:#2ecc71;
+  --danger:#ff7b7b;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+:root[data-theme="light"] {
+  --bg:#f4f7ff;
+  --surface:#ffffff;
+  --surface-soft:#f2f5ff;
+  --text:#0d1733;
+  --muted:#4f5f86;
   --primary:#5865f2;
-  --danger:#ed4245;
+  --border:#dbe3ff;
+  --ok:#14995e;
+  --danger:#d93636;
+  --shadow:0 8px 26px rgba(51,78,148,.12);
 }
-[data-theme="light"] {
-  --bg:#f2f3f5;
-  --card:#ffffff;
-  --text:#000000;
-  --muted:#555;
-}
+*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Segoe UI, sans-serif;
-  background:var(--bg);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(1000px 600px at 80% -20%, rgba(88,101,242,.08), transparent),var(--bg);
   color:var(--text);
+  min-height:100vh
 }
 .topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 24px;
-  background:var(--card);
+  position:sticky;top:0;z-index:20;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 18px;
+  backdrop-filter:blur(6px);
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  border-bottom:1px solid var(--border)
 }
-.brand{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.brand img{
-  width:28px;
-  height:28px;
-}
+.brand{display:flex;align-items:center;gap:8px;margin-right:auto;font-size:16px}
+.brand img{width:32px;height:32px;border-radius:8px}
+.brand .title{font-weight:800;letter-spacing:.6px}
 .bot-badge{
-  background:var(--primary);
+  background:#5865f2;
   color:white;
   font-size:11px;
   font-weight:700;
-  padding:2px 6px;
-  border-radius:4px;
+  padding:2px 8px;
+  border-radius:6px;
 }
 .dashboard-label{
   font-size:13px;
   color:var(--muted);
 }
+.user-area{display:flex;align-items:center;gap:10px;margin-left:auto}
+.user-name{font-weight:700;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:var(--surface-soft);object-fit:cover}
+
 .button{
-  padding:6px 14px;
-  border-radius:6px;
-  border:none;
-  cursor:pointer;
-  font-weight:500;
-}
-.button-outline{
-  background:transparent;
-  border:1px solid var(--primary);
-  color:var(--primary);
-}
-.button-primary{
-  background:var(--primary);
-  color:white;
-}
-.button-danger{
-  background:var(--danger);
-  color:white;
-}
-.container{
-  padding:24px;
-}
-.card{
-  background:var(--card);
-  padding:16px;
+  border:1px solid var(--border);
   border-radius:10px;
-  margin-bottom:16px;
-}
-input, select{
-  width:100%;
-  padding:6px;
-  margin-top:4px;
-  margin-bottom:12px;
-  background:var(--bg);
-  border:1px solid var(--muted);
-  border-radius:6px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-weight:600;
   color:var(--text);
+  background:var(--surface);
 }
-label{
-  font-size:14px;
-}
-.hidden{display:none;}
-.avatar{
-  width:32px;
-  height:32px;
-  border-radius:50%;
-}
-.guild-card{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+.button:hover{transform:translateY(-1px)}
+.button-primary{background:var(--primary);border-color:transparent;color:#fff}
+.button-danger{background:color-mix(in srgb,var(--danger) 12%,var(--surface));border-color:color-mix(in srgb,var(--danger) 40%,var(--border))}
+.button-invite{background:var(--ok);border-color:transparent;color:#04210a}
+.button-outline{background:transparent;border:1px solid var(--primary);color:var(--primary)}
+
+.layout{max-width:1100px;margin:26px auto;padding:0 14px 40px}
+.title{margin:0 0 6px;font-size:22px}
+.muted{color:var(--muted);margin:0}
+.grid{display:grid;gap:14px;margin-top:18px}
+.guild-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.card{border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);padding:14px}
+.guild-card{display:flex;flex-direction:column;gap:8px}
+.guild-card .g-head{display:flex;gap:12px;align-items:center}
+.guild-card h3{margin:0;font-size:18px}
+.guild-meta{color:var(--muted);font-size:13px;margin:0}
 </style>
 </head>
-<body>
 
-<div id="app"></div>
+<body>
+<div id="root"></div>
 
 <script>
-const API_BASE = "http://localhost:3000";
+const API_BASE="https://pollpi.slavi.workers.dev";
+const TOKEN_KEY="pollpi_token";
+const THEME_KEY="ui_theme";
+const DISCORD_INVITE_BASE="https://discord.com/oauth2/authorize?client_id=1409084528588488727&scope=bot%20applications.commands&permissions=8";
 
-let currentUser = null;
-let currentGuild = null;
-
-function getTheme(){
-  return localStorage.getItem("theme") || "dark";
+function getToken(){return localStorage.getItem(TOKEN_KEY)}
+function getTheme(){return localStorage.getItem(THEME_KEY)||'dark'}
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem(THEME_KEY,t)}
+function escapeHtml(t){return String(t||'')}
+function buildAvatarUrl(user){
+  if(!user)return'https://cdn.discordapp.com/embed/avatars/0.png';
+  if(user.avatar)return`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+  return'https://cdn.discordapp.com/embed/avatars/0.png';
 }
-function setTheme(t){
-  localStorage.setItem("theme",t);
+
+async function apiFetch(path,opts={}){
+  opts.headers=opts.headers||{};
+  const token=getToken();
+  if(token)opts.headers['Authorization']='Bearer '+token;
+  opts.credentials='include';
+  return fetch(API_BASE+path,opts);
 }
-document.documentElement.dataset.theme = getTheme();
 
-function topBar(){
-  const logged = !!currentUser;
-  const themeIcon = getTheme()==="dark"?"🌙":"☀️";
+async function initAuth(){
+  const r=await apiFetch('/me');
+  if(!r.ok)return{logged:false};
+  return r.json();
+}
 
-  return `
-  <div class="topbar">
+async function loadGuilds(){
+  const r=await apiFetch('/guilds');
+  if(!r.ok)throw new Error('guilds error');
+  const d=await r.json();
+  return d.guilds||[];
+}
+
+function topBar(user){
+  const logged=!!user;
+  const themeIcon=getTheme()==='dark'?'🌙':'☀️';
+  return `<header class="topbar">
     <div class="brand">
       <img src="favicon.png">
-      <strong>PollPi</strong>
+      <div class="title">PollPi</div>
       <span class="bot-badge">БОТ</span>
       <span class="dashboard-label">Dashboard</span>
     </div>
-    <div>
-      ${logged ? `
-        <img src="${currentUser.avatar}" class="avatar">
-        ${currentUser.username}
-        <button class="button button-danger" onclick="logout()">Выйти</button>
-      ` : `
-        <button class="button button-outline" onclick="login()">Войти</button>
-      `}
-      <button class="button" onclick="toggleTheme()">${themeIcon}</button>
+    <div class="user-area">
+      ${logged?
+        `<img class="avatar" src="${buildAvatarUrl(user)}">
+         <div class="user-name">${escapeHtml(user.username)}</div>
+         <button id="logoutBtn" class="button button-danger">Выйти</button>`
+        :
+        `<button id="loginBtn" class="button button-outline">Войти</button>`
+      }
+      <button id="themeBtn" class="button">${themeIcon}</button>
     </div>
-  </div>
-  `;
+  </header>`;
 }
 
-function toggleTheme(){
-  const next = getTheme()==="dark"?"light":"dark";
-  setTheme(next);
-  document.documentElement.dataset.theme = next;
-  render();
-}
+async function renderApp(){
+  setTheme(getTheme());
+  const root=document.getElementById('root');
+  const auth=await initAuth();
 
-function login(){
-  window.location.href = API_BASE + "/login";
-}
-
-function logout(){
-  currentUser=null;
-  render();
-}
-
-function renderGuilds(){
-  return `
-  <div class="container">
-    <h2>Ваши серверы</h2>
-    <div class="card guild-card">
-      <div>Test Guild</div>
-      ${currentUser?.isAdmin ? `
-        ${currentUser.botInGuild ?
-          `<button class="button button-primary" onclick="openGuild()">Открыть панель</button>`
-          :
-          `<button class="button button-primary">Пригласить</button>`
-        }
-      `:`<span>Нет доступа</span>`}
-    </div>
-  </div>`;
-}
-
-function openGuild(){
-  if(!currentUser?.isAdmin){
-    render();
+  if(!auth.logged){
+    root.innerHTML=topBar(null)+`
+      <main class="layout">
+        <div class="card">
+          <h2>Требуется вход</h2>
+          <p class="muted">Авторизуйтесь через Discord.</p>
+        </div>
+      </main>`;
+    attachGlobal();
     return;
   }
-  if(!currentUser.botInGuild){
-    render();
-    return;
-  }
-  currentGuild="Test Guild";
-  renderGuildPanel();
+
+  const guilds=await loadGuilds();
+
+  root.innerHTML=topBar(auth.user)+`
+    <main class="layout">
+      <h2>Гильдии</h2>
+      <section class="grid guild-grid">
+        ${guilds.map(g=>{
+          if(g.botPresent && g.isAdmin){
+            return `<div class="card guild-card">
+              <div class="g-head">
+                <h3>${escapeHtml(g.name)}</h3>
+              </div>
+              <button class="button button-primary" onclick="openGuild('${g.id}')">Открыть панель</button>
+            </div>`;
+          }
+          if(!g.botPresent && g.isAdmin){
+            return `<div class="card guild-card">
+              <div class="g-head">
+                <h3>${escapeHtml(g.name)}</h3>
+              </div>
+              <a href="${DISCORD_INVITE_BASE}&guild_id=${g.id}">
+                <button class="button button-invite">Пригласить</button>
+              </a>
+            </div>`;
+          }
+          return '';
+        }).join('')}
+      </section>
+    </main>`;
+  attachGlobal();
 }
 
-function renderGuildPanel(){
-  document.getElementById("app").innerHTML = topBar() + `
-  <div class="container">
-    <h2>${currentGuild}</h2>
-
-    <div class="card">
-      <h3>Модерация</h3>
-      <label>Приветственное сообщение</label>
-      <input type="text">
-
-      <label>Макс предупреждений</label>
-      <input type="number">
-
-      <label>Включить анти-спам</label>
-      <select>
-        <option>true</option>
-        <option>false</option>
-      </select>
-    </div>
-
-    <div class="card">
-      <h3>Развлечения</h3>
-      <label>Включить игры</label>
-      <select>
-        <option>true</option>
-        <option>false</option>
-      </select>
-
-      <label>Минимальный онлайн для игр</label>
-      <input type="number">
-    </div>
-
-    <div class="card">
-      <h3>Роли</h3>
-      <label>Выбор роли</label>
-      <select>
-        <option>Admin</option>
-        <option>Moderator</option>
-        <option>Member</option>
-      </select>
-
-      <label>Выбор участника</label>
-      <select>
-        <option>User1</option>
-        <option>User2</option>
-      </select>
-    </div>
-
-    <button class="button button-primary">Сохранить</button>
-  </div>
-  `;
+function openGuild(id){
+  location.hash="#/guild/"+id;
 }
 
-function render(){
-  document.getElementById("app").innerHTML = topBar() + renderGuilds();
+function attachGlobal(){
+  document.getElementById('themeBtn')?.addEventListener('click',()=>{
+    const next=getTheme()==='dark'?'light':'dark';
+    setTheme(next);
+    renderApp();
+  });
+  document.getElementById('loginBtn')?.addEventListener('click',()=>{
+    location.href=API_BASE+'/login';
+  });
+  document.getElementById('logoutBtn')?.addEventListener('click',()=>{
+    localStorage.removeItem(TOKEN_KEY);
+    location.reload();
+  });
 }
 
-/* Тестовые данные */
-currentUser = {
-  username:"AdminUser",
-  avatar:"https://cdn.discordapp.com/embed/avatars/0.png",
-  isAdmin:true,
-  botInGuild:true
-};
-
-render();
+window.addEventListener('hashchange',renderApp);
+renderApp();
 </script>
 
 </body>
