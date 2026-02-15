@@ -220,7 +220,39 @@ function renderGuildPanelPage(user, guild){
 }
 
 /* EVENTS */
-function attachGlobalEvents(){ document.getElementById('logoutBtn')?.addEventListener('click', async ()=>{ localStorage.removeItem(TOKEN_KEY); try{ await fetch(API_BASE + '/logout', { credentials: 'include' }); }catch(e){} location.hash = '#/guilds'; location.reload(); }); document.getElementById('themeBtn')?.addEventListener('click', ()=>{ const current=getTheme(); setTheme(current==='dark'?'light':'dark'); document.documentElement.dataset.theme=getTheme(); }); }
+function attachGlobalEvents(){
+
+  // LOGOUT
+  document.getElementById('logoutBtn')?.addEventListener('click', async ()=>{
+    localStorage.removeItem(TOKEN_KEY);
+    try{
+      await fetch(API_BASE + '/logout', { credentials: 'include' });
+    }catch(e){}
+    location.hash = '#/guilds';
+    location.reload();
+  });
+
+  // LOGIN
+  document.getElementById('loginBtn')?.addEventListener('click', ()=>{
+    window.location.href = API_BASE + '/login';
+  });
+
+  // THEME SWITCH
+  const themeBtn = document.getElementById('themeBtn');
+  if(themeBtn){
+    themeBtn.addEventListener('click', ()=>{
+      const current = getTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+
+      // применяем тему
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(THEME_KEY, next);
+
+      // мгновенно обновляем иконку
+      themeBtn.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+  }
+}
 
 function attachGuildsPageEvents(){ document.querySelectorAll('[data-copy-id]').forEach(btn=>btn.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(btn.dataset.copyId); const prev = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(()=>btn.textContent = prev,1200); }catch(e){ console.warn(e); } }));
   document.querySelectorAll('[data-open-guild]').forEach(btn=>btn.addEventListener('click', ()=>{ location.hash = '#/guild/' + btn.dataset.openGuild; }));
@@ -338,11 +370,6 @@ async function renderApp(forceReload = false){ setTheme(getTheme()); const root 
 }
 
 window.addEventListener('hashchange', ()=>renderApp()); window.addEventListener('storage', ()=> setTheme(getTheme())); renderApp();
-document.addEventListener('click', e=>{
-  if(e.target?.id==='loginBtn'){
-    window.location.href = API_BASE + '/login';
-  }
-});
 
 </script>
 </body>
