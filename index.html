@@ -1,375 +1,822 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <title>PollPi Dashboard</title>
-  <link rel="icon" href="favicon.png" type="image/png">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <title>PollPi — Guild Settings</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root { --bg:#0b1020; --surface:#141b2f; --surface-soft:#1a2440; --text:#eaf0ff; --muted:#9ca9cb; --primary:#6f7bff; --border:#2a355a; --ok:#2ecc71; --danger:#ff7b7b; --shadow:0 10px 30px rgba(0,0,0,.35); }
-    :root[data-theme="light"] { --bg:#f4f7ff; --surface:#ffffff; --surface-soft:#f2f5ff; --text:#0d1733; --muted:#4f5f86; --primary:#5865f2; --border:#dbe3ff; --ok:#14995e; --danger:#d93636; --shadow:0 8px 26px rgba(51,78,148,.12); }
+    :root{
+      --bg:#0b1020; --surface:#141b2f; --surface-soft:#1a2440; --text:#eaf0ff;
+      --muted:#9ca9cb; --primary:#6f7bff; --border:#2a355a; --ok:#2ecc71;
+      --danger:#ff7b7b; --shadow:0 10px 30px rgba(0,0,0,.35);
+      --accent-on:#67d39f; --accent-off:#6b7280;
+      --glass: rgba(255,255,255,0.02);
+    }
+    :root[data-theme="light"]{
+      --bg:#f4f7ff; --surface:#fff; --surface-soft:#f2f5ff; --text:#0d1733;
+      --muted:#4f5f86; --primary:#5865f2; --border:#dbe3ff; --ok:#14995e; --danger:#d93636;
+      --shadow:0 8px 26px rgba(51,78,148,.12); --accent-on:#14995e; --accent-off:#9aa4c4; --glass: rgba(0,0,0,0.02);
+    }
+
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 600px at 80% -20%, rgba(88,101,242,.08), transparent),var(--bg);color:var(--text);min-height:100vh}
+    body{
+      margin:0; min-height:100vh; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: radial-gradient(1000px 600px at 80% -20%, rgba(88,101,242,.08), transparent), var(--bg);
+      color:var(--text);
+    }
 
-    .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:12px 18px;backdrop-filter:blur(6px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--border)}
-    .brand{display:flex;align-items:center;gap:10px;margin-right:auto}
-    .brand img{width:32px;height:32px;border-radius:8px}
-    .brand .title{font-weight:800;letter-spacing:.6px}
-    .nav-center{margin:auto;text-align:center}
-    .user-area{display:flex;align-items:center;gap:10px;margin-left:auto}
-    .user-name{font-weight:700;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .avatar{width:36px;height:36px;border-radius:999px;border:1px solid var(--border);background:var(--surface-soft);object-fit:cover}
+    /* Topbar */
+    .topbar{ position:sticky; top:0; z-index:40; display:flex; gap:12px; align-items:center; padding:12px 18px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom:1px solid var(--border); }
+    .brand{ display:flex; gap:10px; align-items:center }
+    .brand img{ width:34px; height:34px; border-radius:8px; }
+    .brand .title{ font-weight:800; letter-spacing:.6px; font-size:16px }
+    .user-area{ margin-left:auto; display:flex; gap:8px; align-items:center }
+    .avatar{ width:36px; height:36px; border-radius:999px; border:1px solid var(--border); background:var(--surface-soft); object-fit:cover }
+    .button{ border:1px solid var(--border); border-radius:10px; padding:8px 12px; cursor:pointer; background:var(--surface); color:var(--text); font-weight:600; transition:.12s }
+    .button:hover{ transform:translateY(-1px) }
+    .button-primary{ background:var(--primary); border-color:transparent; color:#fff }
+    .button-danger{ background:color-mix(in srgb,var(--danger) 12%,var(--surface)); border-color:color-mix(in srgb,var(--danger) 40%,var(--border)) }
+    .button-ghost{ background:transparent; border:1px solid transparent }
 
-    .button{border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600;color:var(--text);background:var(--surface);transition:.12s}
-    .button:hover{transform:translateY(-1px)}
-    .button-primary{background:var(--primary);border-color:transparent;color:#fff}
-    .button-danger{background:color-mix(in srgb,var(--danger) 12%,var(--surface));border-color:color-mix(in srgb,var(--danger) 40%,var(--border))}
-    .button-invite{background:var(--ok);border-color:transparent;color:#04210a}
-    .button-disabled{opacity:.5;cursor:not-allowed}
+    .layout{ max-width:1100px; margin:26px auto; padding:0 14px 60px; }
 
-    .layout{max-width:1100px;margin:26px auto;padding:0 14px 40px}
-    .title{margin:0 0 6px;font-size:22px}
-    .muted{color:var(--muted);margin:0}
+    .controls-row{ display:flex; gap:8px; align-items:center; margin-bottom:10px }
+    .search{ flex:1; display:flex; gap:8px; align-items:center }
+    .search input{ flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text) }
+    .small-muted{ color:var(--muted); font-size:13px }
 
-    .grid{display:grid;gap:14px;margin-top:18px}
-    .guild-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-    .card{border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);padding:14px}
-    .guild-card{display:flex;flex-direction:column;gap:8px}
-    .guild-card .g-head{display:flex;gap:12px;align-items:center}
-    .guild-card h3{margin:0;font-size:18px}
-    .guild-meta{color:var(--muted);font-size:13px;margin:0}
-    .tags{display:flex;gap:8px;flex-wrap:wrap}
-    .badge{font-size:12px;padding:6px 8px;border-radius:999px;background:var(--surface-soft);border:1px solid var(--border);color:var(--muted)}
+    /* Guild grid */
+    .grid{ display:grid; gap:14px; margin-top:18px }
+    .guild-grid{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .card{ border:1px solid var(--border); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); padding:14px }
+    .guild-card{ display:flex; flex-direction:column; gap:10px }
+    .g-head{ display:flex; gap:12px; align-items:center }
+    .g-avatar{ width:56px; height:56px; border-radius:12px; object-fit:cover; border:1px solid var(--border) }
+    .guild-meta{ color:var(--muted); font-size:13px; margin:0 }
+    .tags{ display:flex; gap:8px; flex-wrap:wrap }
 
-    .controls-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-    .search{flex:1;display:flex;gap:8px;align-items:center}
-    .search input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
-    .small-muted{color:var(--muted);font-size:13px}
+    /* Panel */
+    .panel{ display:grid; grid-template-columns:280px 1fr; gap:14px; margin-top:18px }
+    .side{ border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface-soft) }
+    .tab{ display:block; padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer }
+    .tab.active{ background:var(--primary); border-color:transparent; color:#fff }
+    .card-surface{ border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--surface) }
 
-    .center-card{max-width:720px;margin:80px auto;text-align:center}
-    .login-hero{border-radius:16px;padding:32px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 86%,transparent),var(--surface));border:1px solid var(--border);box-shadow:var(--shadow)}
-    .login-hero h1{margin:0 0 10px}
-    .login-hero p.lead{margin:0 0 20px;color:var(--muted)}
+    .setting{ border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; background:var(--surface) }
+    label{ display:block; font-weight:700; margin-bottom:8px }
+    .row{ display:flex; gap:8px; align-items:center }
 
-    .panel{display:grid;grid-template-columns:260px 1fr;gap:14px;margin-top:18px}
-    .side{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface-soft)}
-    .tab{display:block;padding:10px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);background:transparent;color:var(--text);text-align:left}
-    .tab.active{background:var(--primary);color:#fff;border-color:transparent}
-    .setting{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--surface)}
-    label{font-weight:700;display:block;margin-bottom:6px}
-    input[type=text], input[type=number], select, textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
-    .row{display:flex;gap:8px}
-    .switch{display:flex;align-items:center;gap:8px}
-    .switch input{transform:scale(1.1)}
-    .small{font-size:13px;color:var(--muted)}
+    /* fancy toggle */
+    .toggle{
+      width:52px; height:30px; border-radius:20px; position:relative; display:inline-block; background:var(--accent-off);
+      border:1px solid var(--border); transition:all .18s; cursor:pointer;
+    }
+    .toggle.on{ background: linear-gradient(90deg,var(--primary), var(--accent-on)); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+    .toggle .knob{ position:absolute; left:4px; top:4px; width:22px; height:22px; border-radius:50%; background:#fff; transition:all .18s }
+    .toggle.on .knob{ transform:translateX(22px) }
 
-    @media(max-width:840px){.guild-grid{grid-template-columns:1fr}.brand .title{display:none}.nav-center{display:none}.user-name{display:none}.panel{grid-template-columns:1fr}}
+    .small{ font-size:13px; color:var(--muted) }
+    .muted{ color:var(--muted) }
+
+    /* bottom drawer modal */
+    .drawer-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:flex-end; justify-content:center; z-index:80 }
+    .drawer{ width:100%; max-width:900px; border-radius:12px 12px 0 0; background:var(--surface); padding:18px; border-top:1px solid var(--border); box-shadow:0 -20px 60px rgba(0,0,0,.6) }
+    .drawer.show{ display:block }
+    .drawer-header{ display:flex; align-items:center; gap:12px; margin-bottom:8px }
+    .drawer-body{ max-height:48vh; overflow:auto; margin-bottom:12px }
+    .drawer-footer{ display:flex; gap:8px; justify-content:flex-end; align-items:center }
+
+    /* spinner */
+    .spinner{ width:18px; height:18px; border-radius:50%; border:3px solid rgba(255,255,255,0.12); border-top-color:var(--text); animation:spin .9s linear infinite; display:inline-block }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    /* nice inputs for selects with search */
+    .select-search{ position:relative }
+    .select-search input{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text) }
+
+    .list-dropdown{ border:1px solid var(--border); border-radius:8px; margin-top:8px; max-height:220px; overflow:auto; background:var(--surface-soft) }
+    .list-item{ padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.02); cursor:pointer }
+    .list-item:hover{ background: color-mix(in srgb, var(--primary) 8%, transparent) }
+
+    /* slider */
+    .slider-row{ display:flex; align-items:center; gap:12px }
+    input[type=range]{ width:100% }
+
+    /* rewards table */
+    .rewards-table{ width:100%; border-collapse:collapse }
+    .rewards-table th, .rewards-table td{ padding:8px; border-bottom:1px dashed rgba(255,255,255,0.03); text-align:left }
+    .rewards-actions{ display:flex; gap:8px; align-items:center }
+
+    @media(max-width:840px){
+      .panel{ grid-template-columns:1fr }
+      .guild-grid{ grid-template-columns:1fr }
+      .layout{ padding-bottom:100px }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
 <script>
-/* CONFIG */
+/* ========== CONFIG ========== */
 const API_BASE = "https://pollpi.slavi.workers.dev";
 const TOKEN_KEY = "pollpi_token";
 const THEME_KEY = "ui_theme";
-const DISCORD_INVITE_BASE = "https://discord.com/oauth2/authorize?client_id=1409084528588488727&scope=bot%20applications.commands&permissions=8";
+const CLIENT_ID = "1409084528588488727"; // used only for invite link
 
-/* SETTINGS TABS and schema for panel */
-const SETTINGS_TABS = [
-  { key: 'general', title: 'Общие' },
-  { key: 'moderation', title: 'Модерация' },
-  { key: 'fun', title: 'Развлечения' },
-  { key: 'autos', title: 'Автозадачи' },
-  { key: 'notifications', title: 'Уведомления' }
-];
-
-// schema: for each tab an array of controls with types
-const SETTINGS_SCHEMA = {
-  general: [
-    { id: 'prefix', label: 'Префикс команд', type: 'text', placeholder: '!', hint: 'Текстовый префикс для команд' },
-    { id: 'welcome_channel', label: 'Канал приветствий (ID)', type: 'text', placeholder: '123456789012345678' },
-    { id: 'max_active_polls', label: 'Макс. одновременно активных опросов', type: 'number', min:0, max:100 }
-  ],
-  moderation: [
-    { id: 'mod_log_channel', label: 'Канал логов модерации (ID)', type: 'text' },
-    { id: 'auto_mute', label: 'Автоматически мутить при X предупреждений', type: 'number', min:0, max:50 },
-    { id: 'mod_enabled', label: 'Включить модерацию', type: 'boolean' }
-  ],
-  fun: [
-    { id: 'memes_channel', label: 'Канал мемов (ID)', type: 'text' },
-    { id: 'fun_role', label: 'Роль для игр', type: 'role' },
-    { id: 'joke_probability', label: 'Вероятность шутки (%)', type: 'number', min:0, max:100 }
-  ],
-  autos: [
-    { id: 'daily_message', label: 'Текст ежедневного сообщения', type: 'text' },
-    { id: 'daily_enabled', label: 'Включить ежедневные сообщения', type: 'boolean' },
-    { id: 'dropdown_sample', label: 'Пример выпадающего списка', type: 'select', options: ['Вариант A','Вариант B'] }
-  ],
-  notifications: [
-    { id: 'notify_role', label: 'Роль уведомлений', type: 'role' },
-    { id: 'notify_on_join', label: 'Уведомлять при входе участника', type: 'boolean' },
-    { id: 'webhook_url', label: 'Webhook URL', type: 'text' }
-  ]
-};
-
-/* HELPERS */
-(function grabTokenFromHash(){ try{ if(location.hash && location.hash.includes('token=')){ const params = new URLSearchParams(location.hash.slice(1)); const t = params.get('token'); if(t){ localStorage.setItem(TOKEN_KEY,t); history.replaceState(null,'', location.pathname + location.search); } } }catch(e){console.warn(e);} })();
+/* ========== HELPERS ========== */
 function getToken(){ return localStorage.getItem(TOKEN_KEY); }
-function getTheme(){ return localStorage.getItem(THEME_KEY) || 'dark'; }
-function setTheme(theme){ document.documentElement.dataset.theme = theme; localStorage.setItem(THEME_KEY, theme); }
-function escapeHtml(raw){ return String(raw||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll("'","&#39;"); }
-function buildAvatarUrl(user){ if(!user) return 'https://cdn.discordapp.com/embed/avatars/0.png'; if(user.avatar) return `https://cdn.discordapp.com/avatars/${user.id||user.sub}/${user.avatar}.png`; let idx=0; try{ idx=(parseInt(user.discriminator||'0',10)||0)%5 }catch(e){ idx=0 } return `https://cdn.discordapp.com/embed/avatars/${idx}.png`; }
+function getTheme(){ return localStorage.getItem(THEME_KEY) || "dark"; }
+function setTheme(t){ document.documentElement.setAttribute("data-theme", t); localStorage.setItem(THEME_KEY, t); }
 
-/* API */
-async function apiFetch(path, opts={}){
+(function grabTokenFromHash(){
+  try{
+    if(location.hash && location.hash.includes("token=")){
+      const params = new URLSearchParams(location.hash.slice(1));
+      const t = params.get("token");
+      if(t){ localStorage.setItem(TOKEN_KEY, t); history.replaceState(null, "", location.pathname + location.search); }
+    }
+  }catch(e){ console.warn("token grab error", e); }
+})();
+
+function escapeHtml(s){ return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;"); }
+
+/* API utility — ensures credentials included for cookies + Authorization header */
+async function apiFetch(path, opts = {}){
   opts = opts || {}; opts.headers = opts.headers || {};
-  const token = getToken(); if(token) opts.headers['Authorization'] = 'Bearer ' + token;
-  opts.credentials = 'include';
-  const url = path.startsWith('/') ? (API_BASE + path) : (API_BASE + '/' + path);
+  const token = getToken();
+  if(token) opts.headers["Authorization"] = "Bearer " + token;
+  opts.credentials = "include";
+  const url = path.startsWith("/") ? (API_BASE + path) : (API_BASE + "/" + path);
   return fetch(url, opts);
 }
-async function loadGuilds(){ const resp = await apiFetch('/guilds'); if(!resp.ok){ let hint=''; try{ hint = await resp.json(); }catch(e){} throw { status: resp.status, hint }; } const data = await resp.json(); return Array.isArray(data.guilds) ? data.guilds : (Array.isArray(data)?data:[]); }
-async function initAuth(){ const resp = await apiFetch('/me'); if(!resp.ok) return { logged:false }; return resp.json(); }
-async function sendSetting(guildId, tabKey, settingId, value){ const payload = { guildId, tab: tabKey, settingId, value }; try{ const r = await apiFetch('/action',{ method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return r; }catch(e){ throw e; } }
 
-/* RENDER: topbar */
-function topBar(user){
-  const loggedIn = !!user;
-  const avatarUrl = loggedIn ? buildAvatarUrl(user) : '';
-  const username = loggedIn ? escapeHtml(user.username||user.name||'User') : '';
-  const themeIcon = getTheme()==='dark' ? '🌙' : '☀️';
-
-  return `
-  <header class="topbar">
-    <div class="brand">
-      <img src="favicon.png" alt="icon">
-      <div class="title">PollPi</div>
-      <span style="background:#5865f2;color:white;padding:2px 6px;border-radius:6px;font-size:12px;font-weight:700;margin-left:6px;">БОТ</span>
-      <small class="muted" style="margin-left:6px;">Dashboard</small>
-    </div>
-
-    <div class="nav-center" aria-hidden="true"></div>
-
-    <div class="user-area">
-      ${loggedIn ? `
-        <img class="avatar" src="${avatarUrl}" alt="avatar">
-        <div class="user-name">${username}</div>
-        <button id="logoutBtn" class="button button-danger">Выйти</button>
-      ` : `
-        <button id="loginBtn" class="button" style="border:1px solid var(--primary);background:transparent;color:var(--primary);">Войти</button>
-      `}
-      <button id="themeBtn" class="button">${themeIcon}</button>
-    </div>
-  </header>`;
+/* convenient POST action sender */
+async function postActions(guildId, actions){
+  const payload = { guildId: String(guildId), guild_id: String(guildId), actions };
+  const resp = await apiFetch("/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return resp;
 }
 
-/* GUILD CARD */
-function guildCard(guild){
-  const icon = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/1.png';
-  const name = escapeHtml(guild.name || 'Без названия');
-  const id = String(guild.id || '');
-  const isAdmin = !!guild.isAdmin;
-  const botPresent = !!guild.botPresent;
-  const badges = [];
-  // Invite link
-  const inviteLink = `${DISCORD_INVITE_BASE}&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`;
+/* ========== UI: Topbar & Pages ========== */
+function topBar(user){
+  const name = user ? (escapeHtml(user.username || user.name || "User") + (user.discriminator ? ("#" + escapeHtml(user.discriminator)) : "")) : "Гость";
+  const avatar = user && user.avatar ? `https://cdn.discordapp.com/avatars/${user.sub||user.id}/${user.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png";
+  return `
+    <header class="topbar">
+      <div class="brand"><img src="favicon.png" alt="icon"><div class="title">PollPi</div></div>
+      <div class="controls-row" style="margin-left:12px;align-items:center"></div>
+      <div class="user-area">
+        ${user ? `<img class="avatar" src="${avatar}" alt="avatar"><div class="small-muted">${name}</div><button id="logoutBtn" class="button button-danger">Выйти</button>` : `<button id="loginBtn" class="button button-primary">Войти</button>`}
+        <button id="themeBtn" class="button">${getTheme()==='dark' ? '🌙' : '☀️'}</button>
+      </div>
+    </header>
+  `;
+}
 
-  // decide primary action
-  let actionHtml = '';
-  if(isAdmin && !botPresent){
-    actionHtml = `<a class="button button-invite" href="${inviteLink}" target="_blank" rel="noopener noreferrer">Пригласить</a>`;
-  } else if(isAdmin && botPresent){
-    actionHtml = `<button class="button button-primary" data-open-guild="${escapeHtml(id)}">Открыть панель</button>`;
-  } else if(botPresent){
-    actionHtml = `<button class="button" data-open-guild="${escapeHtml(id)}">Открыть (только просмотр)</button>`;
+/* Guild card */
+function guildCard(g){
+  const icon = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : "https://cdn.discordapp.com/embed/avatars/1.png";
+  const id = String(g.id || "");
+  const name = escapeHtml(g.name || id);
+  const badges = [];
+  if(g.isAdmin) badges.push('<span class="badge">Вы — админ</span>');
+  if(g.botPresent) badges.push('<span class="badge">Бот установлен</span>');
+  let primaryAction = '';
+  if(g.isAdmin && g.botPresent){
+    primaryAction = `<button class="button button-primary" data-open-guild="${escapeHtml(id)}">Открыть панель</button>`;
+  } else if(g.isAdmin && !g.botPresent){
+    const invite = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&scope=bot%20applications.commands&permissions=8&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`;
+    primaryAction = `<a class="button button-invite" href="${invite}" target="_blank" rel="noopener noreferrer">Пригласить бота</a>`;
+  } else if(g.botPresent){
+    primaryAction = `<button class="button" data-open-guild="${escapeHtml(id)}">Открыть (только просмотр)</button>`;
   } else {
-    actionHtml = `<button class="button button-disabled">Недоступно</button>`;
+    primaryAction = `<button class="button button-ghost button-disabled">Недоступно</button>`;
   }
 
   return `
     <article class="card guild-card" data-guild-id="${escapeHtml(id)}">
       <div class="g-head">
-        <img class="avatar" src="${icon}" alt="icon" style="width:56px;height:56px;border-radius:12px;">
+        <img class="g-avatar" src="${icon}" alt="icon">
         <div style="flex:1">
-          <h3>${name}</h3>
+          <h3 style="margin:0">${name}</h3>
           <p class="guild-meta">ID: ${escapeHtml(id)}</p>
-          <div class="tags" style="margin-top:8px">${badges.join('')}</div>
+          <div class="tags" style="margin-top:8px">${badges.join("")}</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        ${actionHtml}
-        <button class="button" data-copy-id="${escapeHtml(id)}">Копировать ID</button>
-        ${isAdmin && !botPresent ? '' : ''}
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:8px">${primaryAction}<button class="button" data-copy-id="${escapeHtml(id)}">Копировать ID</button></div>
+        <div class="small-muted">${g.permissions ?? ""}</div>
       </div>
-    </article>`;
+    </article>
+  `;
 }
 
-/* PAGES */
-function renderLoginPage(){ return `${topBar(null)}<main class="layout"><section class="center-card"><div class="login-hero card"><h1>Войти через Discord</h1><p class="lead">Подключитесь, чтобы управлять серверами и настраивать PollPi. Вход безопасен — мы используем авторизацию через Discord.</p><div style="display:flex;gap:12px;justify-content:center;margin-top:12px"><a href="${API_BASE}/login"><button class="button button-primary">Войти через Discord</button></a></div><div style="margin-top:18px;color:var(--muted);font-size:13px">Важно: после входа вы увидите список гильдий, в которых у вас есть доступ.</div></div></section></main>`; }
+/* ========= Field creation helper =========
+   createField(config)
+   config: {
+     id, label, description, type: 'text'|'number'|'boolean'|'select'|'member'|'role'|'channel'|'slider'|'rewards', 
+     options: [], min, max, step, placeholder, singleChannelAllowed (bool), separateSetter (bool)
+   }
+   returns DOM element (div.setting)
+*/
+function createField(config, guild){
+  const id = config.id;
+  const wrapper = document.createElement("div");
+  wrapper.className = "setting";
+  let inner = `<label for="${id}">${escapeHtml(config.label || id)}</label>`;
+  if(config.description) inner += `<div class="small-muted" style="margin-bottom:8px">${escapeHtml(config.description)}</div>`;
 
-function renderGuildsPage(user, guilds, searchVal = ''){
-  const empty = '<div class="card empty">Список гильдий пуст или недоступен.</div>';
-  return `${topBar(user)}<main class="layout"><div class="controls-row"><div class="search"><input id="guildSearch" type="text" placeholder="Поиск гильдий по названию или ID..." value="${escapeHtml(searchVal||'')}" /><button id="refreshBtn" class="button">Обновить</button></div><div class="small-muted">${guilds && guilds.length ? guilds.length + ' сервер(ов)' : ''}</div></div><h1 class="title">Гильдии</h1><p class="muted">Выберите сервер для настройки PollPi.</p><section class="grid guild-grid">${guilds && guilds.length ? guilds.map(guildCard).join('') : empty}</section></main>`;
-}
+  if(config.type === "text"){
+    inner += `<input type="text" id="${id}" placeholder="${escapeHtml(config.placeholder||"")}" />`;
+  } else if(config.type === "number"){
+    inner += `<input type="number" id="${id}" min="${config.min||""}" max="${config.max||""}" step="${config.step||"1"}" />`;
+  } else if(config.type === "boolean"){
+    inner += `<div class="row"><div id="${id}_toggle" class="toggle" role="switch" aria-checked="false"><span class="knob"></span></div><div class="small-muted">${escapeHtml(config.hint||"")}</div></div>`;
+  } else if(config.type === "select"){
+    inner += `<select id="${id}">${(config.options||[]).map(o=>`<option value="${escapeHtml(String(o.value??o))}">${escapeHtml(String(o.label??o))}</option>`).join("")}</select>`;
+  } else if(config.type === "member" || config.type === "role" || config.type === "channel"){
+    // searchable dropdown + input for id
+    inner += `<div class="select-search"><input id="${id}_search" placeholder="Поиск по имени или ID..."/><div id="${id}_list" class="list-dropdown"></div></div>`;
+    inner += `<div style="margin-top:8px"><input type="text" id="${id}_manual" placeholder="Вставить ID вручную..." /></div>`;
+    inner += `<div style="margin-top:8px" class="small-muted">Выберите из списка или вставьте ID.</div>`;
+  } else if(config.type === "slider"){
+    inner += `<div class="slider-row"><div style="width:56px" id="${id}_value_display">0</div><input type="range" id="${id}" min="${config.min||0}" max="${config.max||100}" step="${config.step||0.1}" /></div>`;
+  } else if(config.type === "rewards"){
+    inner += `<div style="margin-bottom:8px"><table class="rewards-table" id="${id}_table"><thead><tr><th>Уровень</th><th>Роль (ID)</th><th></th></tr></thead><tbody></tbody></table></div>`;
+    inner += `<div style="display:flex;gap:8px"><input id="${id}_lvl" type="number" min="1" max="1000" placeholder="Уровень" /><input id="${id}_role" placeholder="Role ID" /><button id="${id}_add" class="button">Добавить</button></div>`;
+    inner += `<div style="margin-top:8px"><button id="${id}_clear" class="button button-danger">Очистить все уровни</button></div>`;
+  } else {
+    inner += `<input type="text" id="${id}" />`;
+  }
 
-function renderGuildPanelPage(user, guild){
-  const tabsHtml = SETTINGS_TABS.map(t=>`<button class="tab" data-tab="${t.key}">${escapeHtml(t.title)}</button>`).join('');
-  return `${topBar(user)}<main class="layout"><div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><button id="backToGuilds" class="button">← Назад к гильдиям</button><h2 class="title">Панель сервера — ${escapeHtml(guild.name || guild.id)}</h2><div style="margin-left:auto;color:var(--muted)">Guild ID: ${escapeHtml(guild.id)}</div></div><div class="panel"><aside class="side"><div style="font-weight:800;margin-bottom:8px">Разделы</div>${tabsHtml}</aside><section class="card" id="panelMain"><h3>Настройки сервера</h3><p class="small muted">Тестовые вкладки с возможными типами ввода. Сохранение отправляет данные в /action (backend обязан обрабатывать).</p><div id="tabContent"></div></section></div></main>`;
-}
+  // save row will be in drawer; but quick setter optionally
+  wrapper.innerHTML = inner;
 
-/* EVENTS */
-function attachGlobalEvents(){
-
-  // LOGOUT
-  document.getElementById('logoutBtn')?.addEventListener('click', async ()=>{
-    localStorage.removeItem(TOKEN_KEY);
-    try{
-      await fetch(API_BASE + '/logout', { credentials: 'include' });
-    }catch(e){}
-    location.hash = '#/guilds';
-    location.reload();
-  });
-
-  // LOGIN
-  document.getElementById('loginBtn')?.addEventListener('click', ()=>{
-    window.location.href = API_BASE + '/login';
-  });
-
-  // THEME SWITCH
-  const themeBtn = document.getElementById('themeBtn');
-  if(themeBtn){
-    themeBtn.addEventListener('click', ()=>{
-      const current = getTheme();
-      const next = current === 'dark' ? 'light' : 'dark';
-
-      // применяем тему
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem(THEME_KEY, next);
-
-      // мгновенно обновляем иконку
-      themeBtn.textContent = next === 'dark' ? '🌙' : '☀️';
+  // attach behaviors for toggles, slider, member/role/channel search, rewards
+  if(config.type === "boolean"){
+    const toggle = wrapper.querySelector(`#${id}_toggle`);
+    toggle.addEventListener("click", ()=>{
+      const on = toggle.classList.toggle("on");
+      toggle.setAttribute("aria-checked", on ? "true" : "false");
     });
+  }
+
+  if(config.type === "slider"){
+    const input = wrapper.querySelector(`#${id}`);
+    const disp = wrapper.querySelector(`#${id}_value_display`);
+    input.addEventListener("input", ()=>{ disp.textContent = input.value; });
+    // initialize display
+    setTimeout(()=>{ if(input) disp.textContent = input.value; }, 0);
+  }
+
+  if(config.type === "member" || config.type === "role" || config.type === "channel"){
+    const search = wrapper.querySelector(`#${id}_search`);
+    const list = wrapper.querySelector(`#${id}_list`);
+    const manual = wrapper.querySelector(`#${id}_manual`);
+
+    let lastQuery = "";
+    let cached = []; // cache results for this session
+
+    async function doSearch(q){
+      q = (q||"").trim();
+      if(q === lastQuery) return;
+      lastQuery = q;
+      list.innerHTML = `<div class="list-item small-muted">Поиск...</div>`;
+      try{
+        const path = `/${config.type}s?guildId=${encodeURIComponent(guild.id)}&q=${encodeURIComponent(q)}`;
+        const resp = await apiFetch(path);
+        if(!resp.ok){ list.innerHTML = `<div class="list-item small-muted">Ошибка получения</div>`; return; }
+        const arr = await resp.json();
+        cached = Array.isArray(arr) ? arr : (arr && arr.items) ? arr.items : [];
+        if(!cached.length){ list.innerHTML = `<div class="list-item small-muted">Ничего не найдено</div>`; return; }
+        list.innerHTML = cached.map(it => `<div class="list-item" data-id="${escapeHtml(it.id)}" data-name="${escapeHtml(it.name||it.username||'')}">${escapeHtml(it.name || it.username || it.id)}</div>`).join("");
+        list.querySelectorAll(".list-item").forEach(el=>{
+          el.addEventListener("click", ()=>{
+            const idv = el.dataset.id;
+            manual.value = idv;
+            list.innerHTML = `<div class="list-item small-muted">Выбрано: ${escapeHtml(el.dataset.name)}</div>`;
+          });
+        });
+      }catch(e){
+        console.warn("search error", e);
+        list.innerHTML = `<div class="list-item small-muted">Ошибка сети</div>`;
+      }
+    }
+
+    let debounce;
+    search.addEventListener("input", (e)=>{
+      clearTimeout(debounce);
+      debounce = setTimeout(()=> doSearch(e.target.value), 250);
+    });
+
+    // initial load (no query) — show popular/first items
+    setTimeout(()=> doSearch(""), 200);
+  }
+
+  if(config.type === "rewards"){
+    const table = wrapper.querySelector(`#${id}_table tbody`);
+    const addBtn = wrapper.querySelector(`#${id}_add`);
+    const lvlInp = wrapper.querySelector(`#${id}_lvl`);
+    const roleInp = wrapper.querySelector(`#${id}_role`);
+    const clearBtn = wrapper.querySelector(`#${id}_clear`);
+
+    function renderRow(level, role){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(String(level))}</td><td>${escapeHtml(String(role))}</td><td class="rewards-actions"><button class="button" data-del>Удалить</button></td>`;
+      tr.querySelector("[data-del]").addEventListener("click", ()=>{ tr.remove(); });
+      return tr;
+    }
+
+    addBtn.addEventListener("click", ()=>{
+      const lvl = parseInt(lvlInp.value,10);
+      const role = roleInp.value.trim();
+      if(!lvl || lvl < 1 || lvl > 1000){ alert("Укажите корректный уровень 1-1000"); return; }
+      if(!role){ alert("Укажите роль (ID)"); return; }
+      // check duplicates
+      const exists = Array.from(table.querySelectorAll("tr")).some(tr => parseInt(tr.cells[0].textContent,10) === lvl);
+      if(exists){ alert("Награда для этого уровня уже существует"); return; }
+      table.appendChild(renderRow(lvl, role));
+      lvlInp.value = ""; roleInp.value = "";
+    });
+
+    clearBtn.addEventListener("click", async ()=>{
+      if(!confirm("Вы уверены? Это удалит все награды и отправит запрос на сервер.")) return;
+      // immediate request to clear
+      try{
+        const actions = [{ name: "clear_rewards", value: true }];
+        const resp = await postActions(guild.id, actions);
+        if(resp.ok){ table.innerHTML = ""; alert("Все награды удалены"); }
+        else { const t = await resp.text().catch(()=> ""); alert("Ошибка: " + resp.status + " " + t); }
+      }catch(e){ alert("Ошибка сети: " + e.message); }
+    });
+  }
+
+  return wrapper;
+}
+
+/* ========== Schema builder: build sections with createField ========== */
+function buildGeneralSection(guild){
+  const container = document.createElement("div");
+  container.className = "card-surface";
+  container.innerHTML = `<h3>Основные</h3><p class="small muted">Основные параметры сервера</p>`;
+  // prefix
+  container.appendChild(createField({ id:"prefix", label:"Префикс бота", type:"text", placeholder:"!" }, guild));
+  // welcome channel
+  container.appendChild(createField({ id:"welcome_channel", label:"Канал приветствий", type:"channel", description:"Канал где будут сообщения приветствия" }, guild));
+  // starter roles (multiple roles) -> use role type but allow comma-separated values in manual
+  container.appendChild(createField({ id:"starter_roles", label:"Начальные роли (IDs)", type:"role", description:"Добавьте роли, которые выдаются при входе" }, guild));
+  return container;
+}
+
+function buildCounterSection(guild){
+  const container = document.createElement("div");
+  container.className = "card-surface";
+  container.innerHTML = `<h3>Счётчик</h3><p class="small muted">Настройка счётчика сервера</p>`;
+  // counter channel (single)
+  container.appendChild(createField({ id:"counter_channel", label:"Канал счётчика", type:"channel", description:"Максимум 1 канал. Удалите чтобы снять." }, guild));
+  // counter value (number) with separate setter
+  const counterField = createField({ id:"counter_value", label:"Значение счётчика", type:"number", min:0, max:999999, separateSetter:true }, guild);
+  // add separate "Set" button
+  const setRow = document.createElement("div");
+  setRow.style.marginTop = "8px";
+  setRow.innerHTML = `<button id="set_counter_btn" class="button">Установить значение</button> <span class="small-muted" id="set_counter_status"></span>`;
+  counterField.appendChild(setRow);
+  container.appendChild(counterField);
+
+  // allow math, allow /calculate booleans
+  container.appendChild(createField({ id:"allow_math", label:"Разрешить математику", type:"boolean", hint:"Разрешить вычисления" }, guild));
+  container.appendChild(createField({ id:"allow_calculate_cmd", label:"Разрешить /calculate", type:"boolean" }, guild));
+  // tolerance (float slider)
+  container.appendChild(createField({ id:"counter_tolerance", label:"Толерантность счётчика", type:"slider", min:0.01, max:1, step:0.01 }, guild));
+
+  // attach setter behavior
+  setRow.querySelector("#set_counter_btn").addEventListener("click", async ()=>{
+    const valInput = counterField.querySelector("#counter_value");
+    const value = valInput ? Number(valInput.value) : NaN;
+    if(!Number.isInteger(value)){ alert("Введите целое число"); return; }
+    const status = document.getElementById("set_counter_status");
+    status.textContent = "Сохранение...";
+    try{
+      const resp = await postActions(guild.id, [{ name:"set_counter", value }]);
+      if(resp.ok){ status.textContent = "Установлено"; setTimeout(()=> status.textContent = "", 1500); }
+      else { const t = await resp.text().catch(()=> ""); status.textContent = "Ошибка: "+resp.status; console.warn("set counter error", t); }
+    }catch(e){ status.textContent = "Ошибка сети"; }
+  });
+
+  return container;
+}
+
+function buildLevelsSection(guild){
+  const container = document.createElement("div");
+  container.className = "card-surface";
+  container.innerHTML = `<h3>Уровни</h3><p class="small muted">Система уровней и наград</p>`;
+  container.appendChild(createField({ id:"levels_channel", label:"Канал уровней", type:"channel", description:"Максимум 1 канал" }, guild));
+  container.appendChild(createField({ id:"rewards", label:"Награды за уровни", type:"rewards" }, guild));
+  container.appendChild(createField({ id:"reactions_for_xp", label:"Выдавать уровень за реакции", type:"boolean" }, guild));
+  container.appendChild(createField({ id:"voice_time_xp", label:"Выдавать уровни за голосовое время", type:"boolean" }, guild));
+  container.appendChild(createField({ id:"level_modifier", label:"Модификатор уровня", type:"slider", min:0.1, max:10, step:0.1 }, guild));
+  return container;
+}
+
+/* ========== Drawer (save UI) ========= */
+const drawerState = {
+  open: false,
+  dirty: false,
+  currentGuild: null,
+  pendingActions: []
+};
+
+function openDrawer(guild, pendingActions){
+  drawerState.open = true;
+  drawerState.dirty = true;
+  drawerState.currentGuild = guild;
+  drawerState.pendingActions = pendingActions || [];
+  const backdrop = document.getElementById("drawer_backdrop");
+  const drawer = document.getElementById("drawer_panel");
+  document.getElementById("drawer_actions_list").innerHTML = pendingActions.map(a => `<div style="display:flex;justify-content:space-between;padding:6px 0"><div><b>${escapeHtml(a.name)}</b>: ${escapeHtml(String(a.value))}</div></div>`).join("");
+  backdrop.style.display = "flex";
+  drawer.classList.add("show");
+  // intercept navigation via hashchange by setting global flag (handled elsewhere)
+}
+
+function closeDrawer(success){
+  drawerState.open = false;
+  drawerState.dirty = false;
+  drawerState.pendingActions = [];
+  drawerState.currentGuild = null;
+  const backdrop = document.getElementById("drawer_backdrop");
+  const drawer = document.getElementById("drawer_panel");
+  drawer.classList.remove("show");
+  backdrop.style.display = "none";
+}
+
+/* ========== Page rendering ========== */
+function renderLogin(user){
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <section class="card" style="max-width:720px;margin:80px auto;text-align:center">
+        <h1 class="title">Войти через Discord</h1>
+        <p class="muted">Авторизуйтесь, чтобы управлять гильдиями и настраивать PollPi.</p>
+        <div style="margin-top:18px"><a href="${API_BASE}/login"><button class="button button-primary">Войти через Discord</button></a></div>
+      </section>
+    </main>
+  `;
+}
+
+function renderGuilds(user, guilds, searchVal=""){
+  // sort: botPresent first
+  guilds = guilds.slice().sort((a,b) => (b.botPresent?1:0) - (a.botPresent?1:0));
+  return `
+    ${topBar(user)}
+    <main class="layout">
+      <div class="controls-row">
+        <div class="search">
+          <input id="guildSearch" placeholder="Поиск гильдий по названию или ID..." value="${escapeHtml(searchVal||"")}" />
+          <button id="refreshBtn" class="button">Обновить</button>
+        </div>
+        <div class="small-muted">${guilds.length} сервер(ов)</div>
+      </div>
+      <h1 class="title">Гильдии</h1>
+      <p class="muted">Выберите сервер для редактирования. Сначала — где установлен бот.</p>
+      <section class="grid guild-grid">
+        ${guilds.length ? guilds.map(g => guildCard(g)).join("") : `<div class="card empty">Список гильдий пуст или недоступен.</div>`}
+      </section>
+    </main>
+    <!-- drawer DOM -->
+    <div id="drawer_backdrop" class="drawer-backdrop"><div id="drawer_panel" class="drawer card-surface">
+      <div class="drawer-header"><strong>Сохранить изменения</strong><div style="margin-left:auto" id="drawer_status_text"></div></div>
+      <div class="drawer-body" id="drawer_actions_list"></div>
+      <div class="drawer-footer">
+        <button id="drawer_cancel" class="button">Отмена</button>
+        <button id="drawer_save" class="button button-primary">Сохранить <span id="drawer_save_spinner" style="display:none;margin-left:8px" class="spinner"></span></button>
+      </div>
+    </div></div>
+  `;
+}
+
+function renderPanelHeader(guild){
+  return `<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px"><button id="backToGuilds" class="button">← Назад</button><h2 class="title" style="margin:0">${escapeHtml(guild.name||guild.id)}</h2><div style="margin-left:auto" class="small-muted">ID: ${escapeHtml(String(guild.id))}</div></div>`;
+}
+
+/* ========== App state & helpers ========== */
+let cachedGuilds = [];
+let cachedUser = null;
+let currentGuild = null;
+let currentTab = "general";
+
+/* load guilds and init */
+async function loadGuilds(){
+  try{
+    const r = await apiFetch("/guilds");
+    if(!r.ok){
+      let hint = "";
+      try{ const j = await r.json(); hint = JSON.stringify(j); }catch(e){}
+      throw { status: r.status, hint };
+    }
+    const data = await r.json();
+    return data.guilds || [];
+  }catch(e){
+    throw e;
   }
 }
 
-function attachGuildsPageEvents(){ document.querySelectorAll('[data-copy-id]').forEach(btn=>btn.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(btn.dataset.copyId); const prev = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(()=>btn.textContent = prev,1200); }catch(e){ console.warn(e); } }));
-  document.querySelectorAll('[data-open-guild]').forEach(btn=>btn.addEventListener('click', ()=>{ location.hash = '#/guild/' + btn.dataset.openGuild; }));
-  const refresh = document.getElementById('refreshBtn'); if(refresh) refresh.addEventListener('click', ()=>renderApp(true));
-  const search = document.getElementById('guildSearch'); if(search){ search.addEventListener('input', (e)=>{ sessionStorage.setItem('guild_search', e.target.value); filterGuildsOnPage(e.target.value); }); search.focus(); }
+async function initAuth(){
+  const r = await apiFetch("/me");
+  if(!r.ok) return { logged:false };
+  return r.json();
 }
 
-function attachPanelEvents(guild){
-  document.getElementById('backToGuilds')?.addEventListener('click', ()=>{ location.hash = '#/guilds'; renderApp(); });
-  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',(e)=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); renderSettingsTab(guild, t.dataset.tab);
-  }));
-  // activate first tab
-  const firstTab = document.querySelector('.tab'); if(firstTab){ firstTab.classList.add('active'); renderSettingsTab(guild, firstTab.dataset.tab); }
-}
+/* ==== glue for panel: render settings tabs and fields ==== */
+function renderSettingsUIForGuild(guild){
+  const main = document.getElementById("panelMain");
+  if(!main) return;
+  main.innerHTML = `<div class="card-surface"><div id="panelHeader"></div><div id="panelTabs" style="display:flex;gap:8px;margin-bottom:12px"></div><div id="panelContent"></div></div>`;
+  document.getElementById("panelHeader").innerHTML = renderPanelHeader(guild);
+  document.getElementById("backToGuilds")?.addEventListener("click", ()=>{ location.hash = "#/guilds"; renderApp(); });
 
-/* render settings tab */
-function renderSettingsTab(guild, tabKey){
-  const container = document.getElementById('tabContent'); if(!container) return; container.innerHTML = '';
-  const schema = SETTINGS_SCHEMA[tabKey] || [];
-  schema.forEach(control => {
-    const el = document.createElement('div'); el.className = 'setting';
-    const id = control.id;
-    let inner = `<label for="${id}">${escapeHtml(control.label || id)}</label>`;
-    if(control.type === 'text'){
-      inner += `<input type="text" id="${id}" placeholder="${escapeHtml(control.placeholder || '')}" />`;
-    } else if(control.type === 'number'){
-      inner += `<input type="number" id="${id}" min="${control.min||''}" max="${control.max||''}" />`;
-    } else if(control.type === 'boolean'){
-      inner += `<div class="switch"><input type="checkbox" id="${id}" /><span class="small">Да / Нет</span></div>`;
-    } else if(control.type === 'select'){
-      inner += `<select id="${id}">` + (Array.isArray(control.options)? control.options.map(o=>`<option>${escapeHtml(o)}</option>`).join('') : '') + `</select>`;
-      inner += `<div style="margin-top:8px"><input type="text" id="${id}_new_opt" placeholder="Добавить опцию..." /><button class="button" id="${id}_add">Добавить</button></div>`;
-    } else if(control.type === 'member'){
-      inner += `<input type="text" id="${id}" placeholder="ID участника или @nickname" />`;
-    } else if(control.type === 'role'){
-      inner += `<select id="${id}"><option value="">-- выбрать роль --</option></select><div style="margin-top:8px"><input type="text" id="${id}_new" placeholder="Добавить роль (имя или ID)" /><button class="button" id="${id}_add">Добавить</button></div>`;
-    } else {
-      inner += `<input type="text" id="${id}" />`;
-    }
-    inner += `<div style="display:flex;gap:8px;margin-top:10px"><button class="button button-primary" data-save-setting="${escapeHtml(id)}">Сохранить</button><div class="small muted" id="${id}_status"></div></div>`;
-    el.innerHTML = inner; container.appendChild(el);
-
-    // attach dynamic handlers for select/role add
-    if(control.type === 'select'){
-      setTimeout(()=>{
-        document.getElementById(`${id}_add`)?.addEventListener('click', ()=>{
-          const val = document.getElementById(`${id}_new_opt`).value.trim(); if(!val) return; const sel = document.getElementById(id); const op = document.createElement('option'); op.textContent = val; sel.appendChild(op); document.getElementById(`${id}_new_opt`).value = '';
-        });
-      },0);
-    }
-    if(control.type === 'role'){
-      setTimeout(()=>{
-        document.getElementById(`${id}_add`)?.addEventListener('click', ()=>{
-          const val = document.getElementById(`${id}_new`).value.trim(); if(!val) return; const sel = document.getElementById(id); const op = document.createElement('option'); op.textContent = val; op.value = val; sel.appendChild(op); document.getElementById(`${id}_new`).value = '';
-        });
-      },0);
-    }
-    // save handler
-    setTimeout(()=>{
-      document.querySelector(`[data-save-setting="${escapeHtml(id)}"]`)?.addEventListener('click', async ()=>{
-        try{
-          const saveBtn = document.querySelector(`[data-save-setting="${escapeHtml(id)}"]`);
-          saveBtn.disabled = true; saveBtn.textContent = 'Сохраняю...';
-          let value;
-          if(control.type === 'boolean') value = document.getElementById(id).checked;
-          else if(control.type === 'select') value = Array.from(document.getElementById(id).options).map(o=>o.value||o.textContent);
-          else value = document.getElementById(id).value;
-          await sendSetting(guild.id, tabKey, id, value);
-          document.getElementById(`${id}_status`).textContent = 'Сохранено';
-          setTimeout(()=>{ if(document.getElementById(`${id}_status`)) document.getElementById(`${id}_status`).textContent = ''; },2000);
-          saveBtn.disabled = false; saveBtn.textContent = 'Сохранить';
-        }catch(e){ console.warn(e); if(document.getElementById(`${id}_status`)) document.getElementById(`${id}_status`).textContent = 'Ошибка'; const saveBtn = document.querySelector(`[data-save-setting="${escapeHtml(id)}"]`); if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Сохранить'; } }
-      });
-    },0);
-  });
-}
-
-/* search filter */
-function filterGuildsOnPage(q){ q = (q||'').toLowerCase().trim(); document.querySelectorAll('.guild-card').forEach(card=>{ const title = (card.querySelector('h3')?.textContent || '').toLowerCase(); const meta = (card.querySelector('.guild-meta')?.textContent || '').toLowerCase(); const gid = (card.dataset.guildId || '').toLowerCase(); if(!q || title.includes(q) || meta.includes(q) || gid.includes(q)) card.style.display = ''; else card.style.display = 'none'; }); }
-
-/* MAIN renderApp */
-async function renderApp(forceReload = false){ setTheme(getTheme()); const root = document.getElementById('root'); try{ const auth = await initAuth(); if(!auth.logged){ root.innerHTML = renderLoginPage(); attachGlobalEvents(); return; }
-
-    const hash = (location.hash || '#/guilds').replace('#',''); const [_, route, guildId] = hash.split('/');
-
-    if(route === 'guild' && guildId){
-      // load guilds to find guild info and permissions
-      let guilds = [];
-      try{ guilds = await loadGuilds(); }catch(err){ console.warn('loadGuilds failed',err); location.hash = '#/guilds'; renderApp(); return; }
-      const guild = guilds.find(g=>String(g.id) === String(guildId));
-      if(!guild || !guild.botPresent || !guild.isAdmin){
-        // redirect to guilds if not allowed or bot not present
-        alert('У вас нет доступа к настройкам этого сервера или бот не установлен.');
-        location.hash = '#/guilds'; renderApp(); return;
+  // tabs
+  const tabs = [
+    { key: "general", title: "Основные", builder: buildGeneralSection },
+    { key: "counter", title: "Счётчик", builder: buildCounterSection },
+    { key: "levels", title: "Уровни", builder: buildLevelsSection },
+    // add placeholders for other tabs if needed
+  ];
+  const tabsNode = document.getElementById("panelTabs");
+  tabsNode.innerHTML = tabs.map(t => `<button class="tab ${t.key===currentTab ? "active":""}" data-tab="${t.key}">${escapeHtml(t.title)}</button>`).join("");
+  tabsNode.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", (e)=>{
+      if(drawerState.dirty){
+        alert("Сохраните или отмените изменения в модальном окне перед сменой раздела.");
+        return;
       }
-      root.innerHTML = renderGuildPanelPage(auth.user, guild);
-      attachGlobalEvents(); attachPanelEvents(guild);
+      currentTab = btn.dataset.tab;
+      renderSettingsUIForGuild(guild);
+    });
+  });
+
+  // content
+  const content = document.getElementById("panelContent");
+  content.innerHTML = "";
+  const section = tabs.find(t => t.key === currentTab) || tabs[0];
+  content.appendChild(section.builder(guild));
+
+  // attach generic Save action: collect fields and open drawer
+  // We'll provide "Сохранить все" button below content
+  const saveWrap = document.createElement("div");
+  saveWrap.style.marginTop = "12px";
+  saveWrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div class="small-muted">Есть несохранённые изменения будут отображены в модальном окне</div><div><button id="open_save_drawer" class="button button-primary">Сохранить все</button></div></div>`;
+  content.appendChild(saveWrap);
+
+  document.getElementById("open_save_drawer").addEventListener("click", ()=>{
+    // gather actions from current fields
+    const actions = gatherActionsFromUI(guild);
+    if(actions.length === 0){ alert("Нет изменений для сохранения"); return; }
+    openDrawer(guild, actions);
+  });
+
+  // drawer save/cancel handlers
+  document.getElementById("drawer_cancel").onclick = ()=>{
+    closeDrawer(false);
+  };
+  document.getElementById("drawer_save").onclick = async ()=>{
+    const spinner = document.getElementById("drawer_save_spinner");
+    document.getElementById("drawer_save").disabled = true;
+    spinner.style.display = "inline-block";
+    try{
+      const resp = await postActions(drawerState.currentGuild.id, drawerState.pendingActions);
+      if(resp.ok){
+        // success: close drawer
+        spinner.style.display = "none";
+        document.getElementById("drawer_save").disabled = false;
+        closeDrawer(true);
+        alert("Сохранено успешно");
+      } else {
+        const text = await resp.text().catch(()=>"");
+        spinner.style.display = "none";
+        document.getElementById("drawer_save").disabled = false;
+        document.getElementById("drawer_status_text").textContent = `Ошибка: ${resp.status}`;
+        alert("Сервер вернул ошибку: " + resp.status + " " + text);
+      }
+    }catch(e){
+      spinner.style.display = "none";
+      document.getElementById("drawer_save").disabled = false;
+      alert("Ошибка сети: " + e.message);
+    }
+  };
+
+  // compatibility: attach selects' dynamic behaviors already done in createField
+  // also, warn on beforeunload when drawerState.dirty
+  window.onbeforeunload = (ev)=>{
+    if(drawerState.dirty){
+      const msg = "Есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?";
+      ev.returnValue = msg;
+      return msg;
+    }
+  };
+}
+
+/* gather actions from UI: we look for fields inside panelContent and build actions array */
+function gatherActionsFromUI(guild){
+  const actions = [];
+  const panelContent = document.getElementById("panelContent");
+  if(!panelContent) return actions;
+
+  // helper to detect value per field id
+  function readField(id){
+    const el = panelContent.querySelector(`#${id}`);
+    if(el && el.type === "checkbox") return el.checked;
+    if(el && el.tagName === "SELECT") return Array.from(el.options).map(o=>o.value || o.textContent);
+    if(el && el.tagName === "INPUT" && (el.type === "text" || el.type === "number")) return el.value;
+    // toggles
+    const togg = panelContent.querySelector(`#${id}_toggle`);
+    if(togg) return togg.classList.contains("on");
+    // manual selects
+    const manual = panelContent.querySelector(`#${id}_manual`);
+    if(manual) return manual.value;
+    // slider
+    const slider = panelContent.querySelector(`#${id}`);
+    if(slider && slider.type === "range") return slider.value;
+    // rewards table
+    const table = panelContent.querySelector(`#${id}_table`);
+    if(table){
+      const out = [];
+      table.querySelectorAll("tbody tr").forEach(tr=>{
+        const lvl = parseInt(tr.cells[0].textContent, 10);
+        const role = tr.cells[1].textContent.trim();
+        out.push({ level: lvl, role: role });
+      });
+      return out;
+    }
+    // fallback
+    if(el) return el.value;
+    return null;
+  }
+
+  // explicit list of known ids we created in build* functions
+  const ids = [
+    "prefix", "welcome_channel", "starter_roles",
+    "counter_channel", "counter_value", "allow_math", "allow_calculate_cmd", "counter_tolerance",
+    "levels_channel", "rewards", "reactions_for_xp", "voice_time_xp", "level_modifier"
+  ];
+
+  ids.forEach(id=>{
+    const val = readField(id);
+    if(val !== null && val !== "" && !(Array.isArray(val) && val.length===0)){
+      actions.push({ name: id, value: val });
+    }
+  });
+
+  return actions;
+}
+
+/* ========== App rendering ========== */
+async function renderApp(forceReload = false){
+  setTheme(getTheme());
+  const root = document.getElementById("root");
+  try{
+    const auth = await initAuth();
+    if(!auth.logged){
+      root.innerHTML = renderLogin(null);
+      document.getElementById("loginBtn")?.addEventListener("click", ()=> location.href = API_BASE + "/login");
+      return;
+    }
+    cachedUser = auth.user;
+    // handle routes
+    const hash = (location.hash || "#/guilds").replace("#", "");
+    const [_, route, guildId] = hash.split("/");
+
+    if(route === "guild" && guildId){
+      // load guilds first (for permission check)
+      if(!cachedGuilds.length || forceReload){
+        cachedGuilds = await loadGuilds();
+      }
+      const guild = cachedGuilds.find(g=>String(g.id) === String(guildId));
+      if(!guild){
+        alert("Гильдия не найдена или токены истекли. Переавторизуйтесь.");
+        location.hash = "#/guilds";
+        return renderApp();
+      }
+      // show only if admin OR bot present (we allow both but check permission)
+      if(!guild.isAdmin){
+        alert("У вас нет прав администратора для этой гильдии.");
+        location.hash = "#/guilds";
+        return renderApp();
+      }
+
+      currentGuild = guild;
+      root.innerHTML = `${topBar(auth.user)}<main class="layout"><div id="panelWrapper"></div></main>`;
+      // panel wrapper
+      const panelWrapper = document.getElementById("panelWrapper");
+      panelWrapper.innerHTML = `<div class="panel"><aside class="side"><div style="font-weight:800;margin-bottom:8px">Разделы</div><div id="tabs_list"></div></aside><section id="panelMain" class="card-surface"></section></div>`;
+      // fill tabs list
+      const tabsHtml = ["general","counter","levels"].map(t=>`<button class="tab ${t===currentTab? "active":""}" data-tab="${t}">${t==="general"?"Основные": t==="counter"?"Счётчик":"Уровни"}</button>`).join("");
+      document.getElementById("tabs_list").innerHTML = tabsHtml;
+
+      // attach events to tabs (they will use drawerState.dirty to block switching)
+      document.querySelectorAll("#tabs_list .tab").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          if(drawerState.dirty){
+            alert("Сохраните или отмените изменения в модальном окне перед сменой раздела.");
+            return;
+          }
+          currentTab = btn.dataset.tab;
+          renderSettingsUIForGuild(guild);
+          // rerender tabs active state
+          document.querySelectorAll("#tabs_list .tab").forEach(x=>x.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      });
+
+      renderSettingsUIForGuild(guild);
+      // attach global events
+      document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
+        localStorage.removeItem(TOKEN_KEY);
+        try{ await fetch(API_BASE + "/logout", { credentials: "include" }); }catch(e){}
+        location.hash = "#/guilds";
+        renderApp();
+      });
+      document.getElementById("themeBtn")?.addEventListener("click", ()=>{ const next = getTheme()==="dark"?"light":"dark"; setTheme(next); renderApp(); });
       return;
     }
 
-    // default: guilds page
-    root.innerHTML = `${topBar(auth.user)}<main class="layout"><div class="controls-row"><div class="search"><input id="guildSearch" type="text" placeholder="Поиск гильдий по названию или ID..." value="${escapeHtml(sessionStorage.getItem('guild_search')||'')}" /><button id="refreshBtn" class="button">Обновить</button></div><div class="small-muted">Загрузка...</div></div><section class="grid guild-grid"><div class="card empty">Загрузка...</div></section></main>`;
-    document.getElementById('refreshBtn')?.addEventListener('click', ()=>renderApp(true)); document.getElementById('guildSearch')?.addEventListener('input', (e)=>{ sessionStorage.setItem('guild_search', e.target.value); }); attachGlobalEvents();
+    // default: guilds list
+    // refresh cache if empty or forced
+    if(!cachedGuilds.length || forceReload){
+      cachedGuilds = await loadGuilds();
+    }
+    root.innerHTML = renderGuilds(auth.user, cachedGuilds, sessionStorage.getItem("guild_search") || "");
+    // attach events
+    document.getElementById("refreshBtn")?.addEventListener("click", ()=> renderApp(true));
+    document.getElementById("guildSearch")?.addEventListener("input", (e)=>{ sessionStorage.setItem("guild_search", e.target.value); filterGuildsOnPage(e.target.value); });
+    document.querySelectorAll("[data-copy-id]").forEach(btn => btn.addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(btn.dataset.copyId); const prev = btn.textContent; btn.textContent = "Скопировано"; setTimeout(()=>btn.textContent = prev, 1200); }catch(e){ console.warn(e); } }));
+    document.querySelectorAll("[data-open-guild]").forEach(btn => btn.addEventListener("click", ()=>{
+      const id = btn.dataset.openGuild;
+      // find guild and navigate
+      location.hash = "#/guild/" + id;
+      renderApp();
+    }));
 
-    // fetch guilds
-    let guilds = [];
-    try{ guilds = await loadGuilds(); }catch(err){ const hint = err.hint || {}; const hintText = hint && hint.reason === 'no_oauth_tokens' ? 'Требуется повторная авторизация — нажмите Войти' : (typeof hint === 'object' ? JSON.stringify(hint) : String(hint)); root.innerHTML = `${topBar(auth.user)}<main class="layout"><div class="controls-row"><div class="search"><input id="guildSearch" type="text" placeholder="Поиск гильдий по названию или ID..." value="${escapeHtml(sessionStorage.getItem('guild_search')||'')}" /><button id="refreshBtn" class="button">Обновить</button></div></div><div class="card" style="color:var(--danger);margin-bottom:12px">Ошибка загрузки гильдий: ${escapeHtml(err.status + ' ' + hintText)}<div style="margin-top:8px"><a href="${API_BASE}/login"><button class="button button-primary">Переавторизоваться</button></a></div></div></main>`; attachGlobalEvents(); document.getElementById('refreshBtn')?.addEventListener('click', ()=>renderApp(true)); return; }
+    // drawer DOM exists in this page too (so we must create only once)
+    if(!document.getElementById("drawer_backdrop")){
+      document.body.insertAdjacentHTML("beforeend", `
+        <div id="drawer_backdrop" class="drawer-backdrop" style="display:none">
+          <div id="drawer_panel" class="drawer card-surface">
+            <div class="drawer-header"><strong>Сохранить изменения</strong><div style="margin-left:auto" id="drawer_status_text"></div></div>
+            <div class="drawer-body" id="drawer_actions_list"></div>
+            <div class="drawer-footer">
+              <button id="drawer_cancel" class="button">Отмена</button>
+              <button id="drawer_save" class="button button-primary">Сохранить <span id="drawer_save_spinner" style="display:none;margin-left:8px" class="spinner"></span></button>
+            </div>
+          </div>
+        </div>
+      `);
+    }
 
-    const searchVal = sessionStorage.getItem('guild_search') || '';
-    root.innerHTML = renderGuildsPage(auth.user, guilds, searchVal);
-    attachGlobalEvents(); attachGuildsPageEvents(); if(searchVal) filterGuildsOnPage(searchVal);
-
-  }catch(e){ root.innerHTML = `<main class="layout"><section class="card"><h2>Ошибка</h2><pre>${escapeHtml(e && e.message ? e.message : String(e))}</pre></section></main>`; }
+    // attach global topbar events
+    document.getElementById("logoutBtn")?.addEventListener("click", async ()=>{
+      localStorage.removeItem(TOKEN_KEY);
+      try{ await fetch(API_BASE + "/logout", { credentials: "include" }); }catch(e){}
+      location.hash = "#/guilds";
+      renderApp();
+    });
+    document.getElementById("themeBtn")?.addEventListener("click", ()=>{ const next = getTheme()==="dark"?"light":"dark"; setTheme(next); renderApp(); });
+  }catch(e){
+    root.innerHTML = `<main class="layout"><section class="card"><h2>Ошибка</h2><pre>${escapeHtml(e && e.message ? e.message : String(e))}</pre></section></main>`;
+  }
 }
 
-window.addEventListener('hashchange', ()=>renderApp()); window.addEventListener('storage', ()=> setTheme(getTheme())); renderApp();
+/* filter function on guild grid */
+function filterGuildsOnPage(q){
+  q = (q||"").toLowerCase().trim();
+  document.querySelectorAll(".guild-card").forEach(card=>{
+    const title = (card.querySelector("h3")?.textContent || "").toLowerCase();
+    const meta = (card.querySelector(".guild-meta")?.textContent || "").toLowerCase();
+    const gid = (card.dataset.guildId || "").toLowerCase();
+    if(!q || title.includes(q) || meta.includes(q) || gid.includes(q)) card.style.display = "";
+    else card.style.display = "none";
+  });
+}
+
+/* ========== Init ========== */
+window.addEventListener("hashchange", () => {
+  // block navigation if drawer open/dirty
+  if(drawerState.dirty){
+    alert("Сохраните или отмените изменения в модальном окне перед переходом.");
+    // revert hash change by re-setting location
+    setTimeout(()=> { location.hash = location.hash; }, 0);
+    return;
+  }
+  renderApp();
+});
+window.addEventListener("storage", ()=> setTheme(getTheme()));
+renderApp();
 
 </script>
 </body>
