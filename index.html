@@ -12,7 +12,7 @@
     body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1000px 600px at 80% -20%, rgba(88,101,242,.08), transparent),var(--bg);color:var(--text);min-height:100vh}
 
     .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:12px 18px;backdrop-filter:blur(6px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--border)}
-    .brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+    .brand{display:flex;align-items:center;gap:6px;margin-right:auto;font-size:16px}
     .brand img{width:32px;height:32px;border-radius:8px}
     .brand .title{font-weight:800;letter-spacing:.6px}
     .nav-center{margin:auto;text-align:center}
@@ -67,48 +67,72 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
 <script>
 /* CONFIG */
-const API_BASE = "https://pollpi.slavi.workers.dev";
-const TOKEN_KEY = "pollpi_token";
-const THEME_KEY = "ui_theme";
-const DISCORD_INVITE_BASE = "https://discord.com/oauth2/authorize?client_id=1409084528588488727&scope=bot%20applications.commands&permissions=8";
+const API_BASE="https://pollpi.slavi.workers.dev";
+const TOKEN_KEY="pollpi_token";
+const THEME_KEY="ui_theme";
+const DISCORD_INVITE_BASE="https://discord.com/oauth2/authorize?client_id=1409084528588488727&scope=bot%20applications.commands&permissions=8";
 
-/* SETTINGS TABS and schema */
-const SETTINGS_TABS = [
-  { key: 'general', title: 'Общие' },
-  { key: 'moderation', title: 'Модерация' },
-  { key: 'fun', title: 'Развлечения' },
-  { key: 'autos', title: 'Автозадачи' },
-  { key: 'notifications', title: 'Уведомления' }
+/* SETTINGS */
+const SETTINGS_TABS=[
+  {key:'general',title:'Общие'},
+  {key:'moderation',title:'Модерация'},
+  {key:'fun',title:'Развлечения'},
+  {key:'autos',title:'Автозадачи'},
+  {key:'notifications',title:'Уведомления'}
 ];
-
-const SETTINGS_SCHEMA = { /* как в старом коде, оставляем полностью */ };
+const SETTINGS_SCHEMA={
+  general:[
+    {id:'prefix',label:'Префикс команд',type:'text',placeholder:'!',hint:'Текстовый префикс для команд'},
+    {id:'welcome_channel',label:'Канал приветствий (ID)',type:'text',placeholder:'123456789012345678'},
+    {id:'max_active_polls',label:'Макс. одновременно активных опросов',type:'number',min:0,max:100}
+  ],
+  moderation:[
+    {id:'mod_log_channel',label:'Канал логов модерации (ID)',type:'text'},
+    {id:'auto_mute',label:'Автоматически мутить при X предупреждений',type:'number',min:0,max:50},
+    {id:'mod_enabled',label:'Включить модерацию',type:'boolean'}
+  ],
+  fun:[
+    {id:'memes_channel',label:'Канал мемов (ID)',type:'text'},
+    {id:'fun_role',label:'Роль для игр',type:'role'},
+    {id:'joke_probability',label:'Вероятность шутки (%)',type:'number',min:0,max:100}
+  ],
+  autos:[
+    {id:'daily_message',label:'Текст ежедневного сообщения',type:'text'},
+    {id:'daily_enabled',label:'Включить ежедневные сообщения',type:'boolean'},
+    {id:'dropdown_sample',label:'Пример выпадающего списка',type:'select',options:['Вариант A','Вариант B']}
+  ],
+  notifications:[
+    {id:'notify_role',label:'Роль уведомлений',type:'role'},
+    {id:'notify_on_join',label:'Уведомлять при входе участника',type:'boolean'},
+    {id:'webhook_url',label:'Webhook URL',type:'text'}
+  ]
+};
 
 /* HELPERS */
-(function grabTokenFromHash(){ try{ if(location.hash && location.hash.includes('token=')){ const params = new URLSearchParams(location.hash.slice(1)); const t = params.get('token'); if(t){ localStorage.setItem(TOKEN_KEY,t); history.replaceState(null,'', location.pathname + location.search); } } }catch(e){console.warn(e);} })();
-function getToken(){ return localStorage.getItem(TOKEN_KEY); }
-function getTheme(){ return localStorage.getItem(THEME_KEY) || 'dark'; }
-function setTheme(theme){ document.documentElement.dataset.theme = theme; localStorage.setItem(THEME_KEY, theme); }
-function escapeHtml(raw){ return String(raw||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll("'","&#39;"); }
-function buildAvatarUrl(user){ if(!user) return 'https://cdn.discordapp.com/embed/avatars/0.png'; if(user.avatar) return `https://cdn.discordapp.com/avatars/${user.id||user.sub}/${user.avatar}.png`; let idx=0; try{ idx=(parseInt(user.discriminator||'0',10)||0)%5 }catch(e){ idx=0 } return `https://cdn.discordapp.com/embed/avatars/${idx}.png`; }
+(function grabTokenFromHash(){try{if(location.hash.includes('token=')){const params=new URLSearchParams(location.hash.slice(1));const t=params.get('token');if(t){localStorage.setItem(TOKEN_KEY,t);history.replaceState(null,'', location.pathname+location.search)}}}catch(e){console.warn(e)}})();
+function getToken(){return localStorage.getItem(TOKEN_KEY)}
+function getTheme(){return localStorage.getItem(THEME_KEY)||'dark'}
+function setTheme(theme){document.documentElement.dataset.theme=theme;localStorage.setItem(THEME_KEY,theme)}
+function escapeHtml(raw){return String(raw||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;")}
+function buildAvatarUrl(user){if(!user)return'https://cdn.discordapp.com/embed/avatars/0.png';if(user.avatar)return`https://cdn.discordapp.com/avatars/${user.id||user.sub}/${user.avatar}.png`;let idx=0;try{idx=(parseInt(user.discriminator||'0',10)||0)%5}catch(e){idx=0}return`https://cdn.discordapp.com/embed/avatars/${idx}.png`}
 
 /* API */
-async function apiFetch(path, opts={}){ opts = opts||{}; opts.headers = opts.headers||{}; const token = getToken(); if(token) opts.headers['Authorization']='Bearer '+token; opts.credentials='include'; const url = path.startsWith('/') ? (API_BASE + path) : (API_BASE + '/' + path); return fetch(url, opts); }
-async function loadGuilds(){ const resp = await apiFetch('/guilds'); if(!resp.ok){ let hint=''; try{ hint = await resp.json(); }catch(e){} throw { status: resp.status, hint }; } const data = await resp.json(); return Array.isArray(data.guilds)?data.guilds:(Array.isArray(data)?data:[]); }
-async function initAuth(){ const resp = await apiFetch('/me'); if(!resp.ok) return { logged:false }; return resp.json(); }
-async function sendSetting(guildId, tabKey, settingId, value){ const payload={guildId,tab:tabKey,settingId,value}; try{ const r = await apiFetch('/action',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); return r; }catch(e){throw e;} }
+async function apiFetch(path,opts={}){opts=opts||{};opts.headers=opts.headers||{};const token=getToken();if(token)opts.headers['Authorization']='Bearer '+token;opts.credentials='include';const url=path.startsWith('/')?(API_BASE+path):(API_BASE+'/'+path);return fetch(url,opts)}
+async function loadGuilds(){const resp=await apiFetch('/guilds');if(!resp.ok){let hint='';try{hint=await resp.json()}catch(e){}throw{status:resp.status,hint}}const data=await resp.json();return Array.isArray(data.guilds)?data.guilds:(Array.isArray(data)?data:[])}
+async function initAuth(){const resp=await apiFetch('/me');if(!resp.ok)return{logged:false};return resp.json()}
+async function sendSetting(guildId,tabKey,settingId,value){const payload={guildId,tab:tabKey,settingId,value};try{const r=await apiFetch('/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r}catch(e){throw e}}
 
-/* RENDER: topbar */
+/* TOPBAR */
 function topBar(user){
-  const avatarUrl = user ? buildAvatarUrl(user) : '';
-  const username = user ? escapeHtml(user.username||user.name||'User') : '';
-  const loggedIn = !!user;
-  const themeIcon = getTheme() === 'dark' ? '🌙' : '☀️';
-  return `
-  <header class="topbar">
+  const avatarUrl=user?buildAvatarUrl(user):'';
+  const username=user?escapeHtml(user.username||user.name||'User'):'';
+  const loggedIn=!!user;
+  const themeIcon=getTheme()==='dark'?'🌙':'☀️';
+  return `<header class="topbar">
     <div class="brand">
       <img src="favicon.png" alt="icon">
       <div class="title">PollPi</div>
@@ -117,7 +141,7 @@ function topBar(user){
     </div>
     <div class="nav-center" aria-hidden="true"></div>
     <div class="user-area">
-      ${loggedIn ? `<img class="avatar" src="${avatarUrl}" alt="avatar"><div class="user-name">${username}</div><button id="logoutBtn" class="button button-danger">Выйти</button>` : `<button id="loginBtn" class="button" style="border:1px solid var(--primary);background:transparent;color:var(--primary);">Войти</button>`}
+      ${loggedIn?`<img class="avatar" src="${avatarUrl}" alt="avatar"><div class="user-name">${username}</div><button id="logoutBtn" class="button button-danger">Выйти</button>`:`<button id="loginBtn" class="button" style="border:1px solid var(--primary);background:transparent;color:var(--primary);">Войти</button>`}
       <button id="themeBtn" class="button">${themeIcon}</button>
     </div>
   </header>`;
@@ -261,8 +285,9 @@ async function renderApp(forceReload = false){ setTheme(getTheme()); const root 
   }catch(e){ root.innerHTML = `<main class="layout"><section class="card"><h2>Ошибка</h2><pre>${escapeHtml(e && e.message ? e.message : String(e))}</pre></section></main>`; }
 }
 
-window.addEventListener('hashchange', ()=>renderApp()); window.addEventListener('storage', ()=> setTheme(getTheme())); renderApp();
-
+window.addEventListener('hashchange',()=>renderApp());
+window.addEventListener('storage',()=>setTheme(getTheme()));
+renderApp();
 </script>
 </body>
 </html>
