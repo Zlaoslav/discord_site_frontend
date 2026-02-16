@@ -670,23 +670,36 @@ async function initAuth(){
 function renderSettingsUIForGuild(guild){
   const main = document.getElementById("panelMain");
   if(!main) return;
-  main.innerHTML = `<div class="card-surface"><div id="panelHeader"></div><div id="panelTabs" style="display:flex;gap:8px;margin-bottom:12px"></div><div id="panelContent"></div></div>`;
-  document.getElementById("panelHeader").innerHTML = renderPanelHeader(guild);
-  document.getElementById("backToGuilds")?.addEventListener("click", ()=>{ location.hash = "#/guilds"; renderApp(); });
 
-  // tabs
+  main.innerHTML = `
+    <div class="card-surface">
+      <div id="panelHeader"></div>
+      <div id="panelTabs" style="display:flex;gap:8px;margin-bottom:12px"></div>
+      <div id="panelContent"></div>
+    </div>
+  `;
+
+  document.getElementById("panelHeader").innerHTML = renderPanelHeader(guild);
+  document.getElementById("backToGuilds")?.addEventListener("click", ()=>{
+    location.hash = "#/guilds";
+    renderApp();
+  });
+
   const tabs = [
     { key: "general", title: "Основные", builder: buildGeneralSection },
     { key: "counter", title: "Счётчик", builder: buildCounterSection },
     { key: "levels", title: "Уровни", builder: buildLevelsSection },
-    // add placeholders for other tabs if needed
   ];
+
   const tabsNode = document.getElementById("panelTabs");
-  tabsNode.innerHTML = tabs.map(t => `<button class="tab ${t.key===currentTab ? "active":""}" data-tab="${t.key}">${escapeHtml(t.title)}</button>`).join("");
-  tabsNode.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", (e)=>{
+  tabsNode.innerHTML = tabs.map(t =>
+    `<button class="tab ${t.key===currentTab ? "active":""}" data-tab="${t.key}">${escapeHtml(t.title)}</button>`
+  ).join("");
+
+  tabsNode.querySelectorAll(".tab").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
       if(drawerState.dirty){
-        alert("Сохраните или отмените изменения в модальном окне перед сменой раздела.");
+        alert("Сохраните или отмените изменения перед сменой раздела.");
         return;
       }
       currentTab = btn.dataset.tab;
@@ -694,61 +707,90 @@ function renderSettingsUIForGuild(guild){
     });
   });
 
-  // content
   const content = document.getElementById("panelContent");
   content.innerHTML = "";
-  const section = tabs.find(t => t.key === currentTab) || tabs[0];
+
+  const section = tabs.find(t=>t.key===currentTab) || tabs[0];
   content.appendChild(section.builder(guild));
 
-  // attach generic Save action: collect fields and open drawer
-  // We'll provide "Сохранить все" button below content
   const saveWrap = document.createElement("div");
   saveWrap.style.marginTop = "12px";
-  saveWrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div class="small-muted">Есть несохранённые изменения будут отображены в модальном окне</div><div><button id="open_save_drawer" class="button button-primary">Сохранить все</button></div></div>`;
+  saveWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="small-muted">Изменения появятся в окне подтверждения</div>
+      <div>
+        <button id="open_save_drawer" class="button button-primary">Сохранить все</button>
+      </div>
+    </div>
+  `;
   content.appendChild(saveWrap);
 
-  document.getElementById("open_save_drawer").addEventListener("click", ()=>{
-    // gather actions from current fields
+  document.getElementById("open_save_drawer")?.addEventListener("click", ()=>{
     const actions = gatherActionsFromUI(guild);
-    if(actions.length === 0){ alert("Нет изменений для сохранения"); return; }
+    if(!actions.length){
+      alert("Нет изменений для сохранения");
+      return;
+    }
     openDrawer(guild, actions);
   });
 
-  // drawer save/cancel handlers
-  document.getElementById("drawer_cancel").onclick = ()=>{
-    closeDrawer(false);
-  };
-  document.getElementById("drawer_save").onclick = async ()=>{
-    const spinner = document.getElementById("drawer_save_spinner");
-    document.getElementById("drawer_save").disabled = true;
-    spinner.style.display = "inline-block";
-    try{
-      const resp = await postActions(drawerState.currentGuild.id, drawerState.pendingActions);
-      if(resp.ok){
-        // success: close drawer
-        spinner.style.display = "none";
-        document.getElementById("drawer_save").disabled = false;
-        closeDrawer(true);
-        alert("Сохранено успешно");
-      } else {
-        const text = await resp.text().catch(()=>"");
-        spinner.style.display = "none";
-        document.getElementById("drawer_save").disabled = false;
-        document.getElementById("drawer_status_text").textContent = `Ошибка: ${resp.status}`;
-        alert("Сервер вернул ошибку: " + resp.status + " " + text);
-      }
-    }catch(e){
-      spinner.style.display = "none";
-      document.getElementById("drawer_save").disabled = false;
-      alert("Ошибка сети: " + e.message);
-    }
-  };
+  /* --- Гарантируем существование drawer --- */
+  if(!document.getElementById("drawer_backdrop")){
+    document.body.insertAdjacentHTML("beforeend", `
+      <div id="drawer_backdrop" class="drawer-backdrop" style="display:none">
+        <div id="drawer_panel" class="drawer card-surface">
+          <div class="drawer-header">
+            <strong>Сохранить изменения</strong>
+            <div style="margin-left:auto" id="drawer_status_text"></div>
+          </div>
+          <div class="drawer-body" id="drawer_actions_list"></div>
+          <div class="drawer-footer">
+            <button id="drawer_cancel" class="button">Отмена</button>
+            <button id="drawer_save" class="button button-primary">
+              Сохранить
+              <span id="drawer_save_spinner" style="display:none;margin-left:8px" class="spinner"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `);
+  }
 
-  // compatibility: attach selects' dynamic behaviors already done in createField
-  // also, warn on beforeunload when drawerState.dirty
+  /* --- Безопасное назначение обработчиков --- */
+  const cancelBtn = document.getElementById("drawer_cancel");
+  const saveBtn = document.getElementById("drawer_save");
+
+  if(cancelBtn){
+    cancelBtn.onclick = ()=> closeDrawer(false);
+  }
+
+  if(saveBtn){
+    saveBtn.onclick = async ()=>{
+      const spinner = document.getElementById("drawer_save_spinner");
+      saveBtn.disabled = true;
+      if(spinner) spinner.style.display = "inline-block";
+
+      try{
+        const resp = await postActions(drawerState.currentGuild.id, drawerState.pendingActions);
+        if(resp.ok){
+          closeDrawer(true);
+          alert("Сохранено успешно");
+        } else {
+          const text = await resp.text().catch(()=> "");
+          alert("Ошибка: " + resp.status + " " + text);
+        }
+      }catch(e){
+        alert("Ошибка сети: " + e.message);
+      }
+
+      if(spinner) spinner.style.display = "none";
+      saveBtn.disabled = false;
+    };
+  }
+
   window.onbeforeunload = (ev)=>{
     if(drawerState.dirty){
-      const msg = "Есть несохранённые изменения. Вы уверены, что хотите покинуть страницу?";
+      const msg = "Есть несохранённые изменения.";
       ev.returnValue = msg;
       return msg;
     }
