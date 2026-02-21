@@ -258,7 +258,7 @@ function topBar(user){
   const avatar = user && user.avatar ? `https://cdn.discordapp.com/avatars/${user.sub||user.id}/${user.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png";
   return `
     <header class="topbar">
-      <div class="brand"><img src="favicon.png" alt="icon"><div class="title">PollPi</div></div>
+      <div class="brand"><img src="favicon.ico" alt="icon"><div class="title">PollPi</div></div>
       <div class="controls-row" style="margin-left:12px;align-items:center"></div>
       <div class="user-area">
         ${user ? `<img class="avatar" src="${avatar}" alt="avatar"><div class="small-muted">${name}</div><button id="logoutBtn" class="button button-danger">Выйти</button>` : `<button id="loginBtn" class="button button-primary">Войти</button>`}
