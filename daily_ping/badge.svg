@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="110" viewBox="0 0 520 110">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#0f1724"/>
+      <stop offset="1" stop-color="#07070a"/>
+    </linearGradient>
+  </defs>
+  <rect rx="14" width="520" height="110" fill="url(#bg)"/>
+  <g font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial" fill="#fff">
+    <g transform="translate(28,28)">
+      <text x="0" y="0" font-size="12" fill="#9aa0a6">Daily ping</text>
+      <text x="0" y="28" font-size="20" font-weight="700">8</text>
+    </g>
+  <g transform="translate(176.0,22)">
+      <text x="0" y="0" font-size="16" font-weight="700">8</text>
+      <text x="0" y="22" font-size="10" fill="#9aa0a6">Last day</text>
+    </g>
+  <g transform="translate(258.0,22)">
+      <text x="0" y="0" font-size="16" font-weight="700">8</text>
+      <text x="0" y="22" font-size="10" fill="#9aa0a6">Last month</text>
+    </g>
+  <g transform="translate(340.0,22)">
+      <text x="0" y="0" font-size="16" font-weight="700">8</text>
+      <text x="0" y="22" font-size="10" fill="#9aa0a6">Last year</text>
+    </g>
+  <g transform="translate(422.0,22)">
+      <text x="0" y="0" font-size="16" font-weight="700">8</text>
+      <text x="0" y="22" font-size="10" fill="#9aa0a6">All time</text>
+    </g>
+  <text x="16" y="98" font-size="10" fill="#9aa0a6">Updated: 2026-05-02 23:21 UTC</text>
+</g>
+</svg>
