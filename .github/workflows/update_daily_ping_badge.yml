@@ -1,0 +1,38 @@
+name: Update Daily Ping badge
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Generate badge
+        run: python3 scripts/generate_badge.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add daily_ping/badge.svg
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update daily_ping badge"
+            git push
+          else
+            echo "No changes to commit"
+          fi
