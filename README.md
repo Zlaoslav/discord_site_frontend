@@ -25,3 +25,5 @@ GitHub (README) — картинка-бейдж
 ```
 
 Workflow в `.github/workflows/update_daily_ping_badge.yml` обновляет бейдж автоматически каждый час.
+Пример:
+![Daily Ping](https://raw.githubusercontent.com/Zlaoslav/discord_site_frontend/main/daily_ping/badge.svg)
